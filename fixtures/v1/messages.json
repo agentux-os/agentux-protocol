@@ -1,0 +1,60 @@
+{
+  "valid": [
+    {
+      "jsonrpc": "2.0",
+      "id": "hello-1",
+      "method": "node.hello",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "msg-01",
+        "occurredAt": "2026-10-15T12:00:00Z",
+        "capabilities": ["run.start", "run.snapshot"],
+        "agentuxVersion": "0.5.0",
+        "supportedProtocolVersions": ["v1"]
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "method": "run.updated",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "msg-02",
+        "occurredAt": "2026-10-15T12:00:01Z",
+        "eventId": "evt-01",
+        "sequence": 4,
+        "runId": "run-01",
+        "state": "testing"
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "id": "start-1",
+      "method": "run.start",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "msg-03",
+        "occurredAt": "2026-10-15T12:00:02Z",
+        "commandId": "cmd-01",
+        "missionId": "mission-01",
+        "runId": "run-01",
+        "repository": "https://github.com/example/project",
+        "prompt": "Implement the requested change",
+        "pipeline": "default",
+        "roles": ["implementer", "reviewer"],
+        "budget": {"maxUsd": 10},
+        "isolationPolicy": "worktree",
+        "requestedCapabilities": ["git", "network_read"]
+      }
+    }
+  ],
+  "invalid": [
+    {"expectedError": "missing protocolVersion", "jsonrpc": "2.0", "method": "node.heartbeat", "params": {}},
+    {"expectedError": "provider credential in payload", "jsonrpc": "2.0", "method": "run.start", "params": {"apiKey": "must-not-be-here"}}
+  ]
+}

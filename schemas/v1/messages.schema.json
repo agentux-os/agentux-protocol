@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentuxos.org/protocol/v1/messages.schema.json",
+  "title": "AgentUX Protocol v1 messages",
+  "type": "object",
+  "$defs": {
+    "baseParams": {
+      "type": "object",
+      "required": ["protocolVersion", "organizationId", "nodeId", "messageId", "occurredAt"],
+      "properties": {
+        "protocolVersion": {"const": "v1"},
+        "organizationId": {"type": "string", "minLength": 1},
+        "nodeId": {"type": "string", "minLength": 1},
+        "messageId": {"type": "string", "minLength": 1},
+        "occurredAt": {"type": "string", "format": "date-time"},
+        "commandId": {"type": "string", "minLength": 1},
+        "eventId": {"type": "string", "minLength": 1},
+        "sequence": {"type": "integer", "minimum": 1},
+        "missionId": {"type": "string", "minLength": 1},
+        "runId": {"type": "string", "minLength": 1},
+        "sessionId": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": true
+    },
+    "request": {
+      "type": "object",
+      "required": ["jsonrpc", "id", "method", "params"],
+      "properties": {
+        "jsonrpc": {"const": "2.0"},
+        "id": {"type": ["string", "integer"]},
+        "method": {"type": "string", "minLength": 1},
+        "params": {"$ref": "#/$defs/baseParams"}
+      },
+      "additionalProperties": false
+    },
+    "notification": {
+      "type": "object",
+      "required": ["jsonrpc", "method", "params"],
+      "properties": {
+        "jsonrpc": {"const": "2.0"},
+        "method": {"type": "string", "minLength": 1},
+        "params": {"$ref": "#/$defs/baseParams"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "oneOf": [
+    {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "node.hello"}, "params": {"required": ["capabilities", "agentuxVersion", "supportedProtocolVersions"]}}}]},
+    {"allOf": [{"$ref": "#/$defs/notification"}, {"properties": {"method": {"const": "node.heartbeat"}, "params": {"required": ["status", "capacity"]}}}]},
+    {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "node.resume"}, "params": {"required": ["lastAcknowledgedSequence"]}}}]},
+    {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "run.start"}, "params": {"required": ["commandId", "missionId", "runId", "repository", "prompt", "pipeline", "roles", "budget", "isolationPolicy", "requestedCapabilities"]}}}]},
+    {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"enum": ["run.cancel", "run.pause", "run.resume"]}, "params": {"required": ["commandId", "runId"]}}}]},
+    {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "request.resolve"}, "params": {"required": ["commandId", "runId", "requestId", "resolution"]}}}]},
+    {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "run.snapshot"}, "params": {"required": ["commandId", "runId"]}}}]},
+    {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "bus.post"}, "params": {"required": ["commandId", "runId", "message"]}}}]},
+    {"allOf": [{"$ref": "#/$defs/notification"}, {"properties": {"method": {"enum": ["node.status_changed", "run.accepted", "run.started", "run.updated", "session.event", "approval.requested", "gate.completed", "run.completed", "run.failed", "artifact.available", "node.alert"]}, "params": {"required": ["eventId", "sequence"]}}}]}
+  ]
+}
