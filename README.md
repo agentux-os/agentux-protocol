@@ -114,3 +114,11 @@ The first public contract is `v1`. Additive fields are allowed. Removing or chan
 4. Remote approvals and cancellation.
 5. Pause/resume, bus messages and artifact references.
 
+## Schemas and fixtures
+
+The v1 message contract is in [`schemas/v1/messages.schema.json`](schemas/v1/messages.schema.json), with representative messages in [`fixtures/v1/messages.json`](fixtures/v1/messages.json). Run the dependency-free contract check with:
+
+```sh
+node scripts/validate-fixtures.mjs
+```
+
