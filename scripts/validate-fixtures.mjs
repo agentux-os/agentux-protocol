@@ -14,19 +14,24 @@ const methods = new Set(schema.oneOf.flatMap((branch) => {
   const method = branch.allOf[1].properties.method;
   return method.const ? [method.const] : method.enum;
 }));
+const baseRequired = schema.$defs.baseParams.required;
+const methodRequired = (method) => schema.oneOf.find((branch) => {
+  const definition = branch.allOf[1].properties.method;
+  return definition.const === method || definition.enum?.includes(method);
+})?.allOf[1].properties.params.required ?? [];
+const accepted = (message) => {
+  if (message.jsonrpc !== "2.0" || !methods.has(message.method) || !message.params) return false;
+  if ("apiKey" in message.params || "providerToken" in message.params) return false;
+  return [...baseRequired, ...methodRequired(message.method)].every((field) => field in message.params);
+};
+
 for (const message of fixtures.valid) {
-  if (!methods.has(message.method)) throw new Error(`fixture method is not in schema: ${message.method}`);
-  for (const field of ["jsonrpc", "method", "params"]) {
-    if (!(field in message)) throw new Error(`fixture is missing ${field}`);
-  }
-  if (message.jsonrpc !== "2.0") throw new Error("fixture is not JSON-RPC 2.0");
-  for (const field of ["protocolVersion", "organizationId", "nodeId", "messageId", "occurredAt"]) {
-    if (!(field in message.params)) throw new Error(`fixture params is missing ${field}`);
-  }
+  if (!accepted(message)) throw new Error(`valid fixture was rejected: ${message.method}`);
 }
 
 for (const message of fixtures.invalid) {
   if (!message.expectedError) throw new Error("invalid fixture must document expectedError");
+  if (accepted(message)) throw new Error(`invalid fixture was accepted: ${message.expectedError}`);
 }
 
 console.log(`validated ${fixtures.valid.length} valid and ${fixtures.invalid.length} invalid AUXP fixtures`);
