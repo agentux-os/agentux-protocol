@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentuxos.org/protocol/v1/envelope.schema.json",
+  "title": "AgentUX Protocol v1 envelope",
+  "type": "object",
+  "required": ["jsonrpc", "method", "params"],
+  "properties": {
+    "jsonrpc": { "const": "2.0" },
+    "id": { "type": ["string", "integer", "null"] },
+    "method": { "type": "string", "minLength": 1 },
+    "params": {
+      "type": "object",
+      "required": ["protocolVersion", "organizationId", "nodeId", "messageId", "occurredAt"],
+      "properties": {
+        "protocolVersion": { "const": "v1" },
+        "organizationId": { "type": "string", "minLength": 1 },
+        "nodeId": { "type": "string", "minLength": 1 },
+        "messageId": { "type": "string", "minLength": 1 },
+        "occurredAt": { "type": "string", "format": "date-time" },
+        "commandId": { "type": "string", "minLength": 1 },
+        "eventId": { "type": "string", "minLength": 1 },
+        "sequence": { "type": "integer", "minimum": 1 },
+        "missionId": { "type": "string", "minLength": 1 },
+        "runId": { "type": "string", "minLength": 1 },
+        "sessionId": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}
