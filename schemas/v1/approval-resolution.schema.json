@@ -4,6 +4,16 @@
   "title": "AgentUX approval resolution v1",
   "type": "object",
   "$defs": {
+    "request": {
+      "type": "object",
+      "required": ["organizationId", "decision", "idempotencyKey"],
+      "properties": {
+        "organizationId": {"type": "string", "minLength": 1},
+        "decision": {"enum": ["approved", "rejected"]},
+        "reason": {"type": "string"},
+        "idempotencyKey": {"type": "string", "minLength": 1}
+      }
+    },
     "conflict": {
       "type": "object",
       "required": ["code", "message"],
@@ -15,9 +25,10 @@
   },
   "oneOf": [
     {
-      "required": ["ok", "approvalId", "decision", "idempotencyKey"],
+      "required": ["ok", "organizationId", "approvalId", "decision", "idempotencyKey"],
       "properties": {
         "ok": {"const": true},
+        "organizationId": {"type": "string", "minLength": 1},
         "approvalId": {"type": "string", "minLength": 1},
         "decision": {"enum": ["approved", "rejected"]},
         "idempotencyKey": {"type": "string", "minLength": 1},
