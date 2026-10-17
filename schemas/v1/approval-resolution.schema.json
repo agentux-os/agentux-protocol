@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentuxos.org/protocol/v1/approval-resolution.schema.json",
+  "title": "AgentUX approval resolution v1",
+  "type": "object",
+  "$defs": {
+    "conflict": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": {"enum": ["denied", "expired", "already_decided", "not_found", "stale_version"]},
+        "message": {"type": "string", "minLength": 1}
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "required": ["ok", "approvalId", "decision", "idempotencyKey"],
+      "properties": {
+        "ok": {"const": true},
+        "approvalId": {"type": "string", "minLength": 1},
+        "decision": {"enum": ["approved", "rejected"]},
+        "idempotencyKey": {"type": "string", "minLength": 1},
+        "idempotentReplay": {"const": true}
+      }
+    },
+    {
+      "required": ["ok", "conflict"],
+      "properties": {
+        "ok": {"const": false},
+        "conflict": {"$ref": "#/$defs/conflict"}
+      }
+    }
+  ]
+}
