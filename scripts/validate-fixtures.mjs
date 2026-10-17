@@ -54,5 +54,17 @@ if (approvalSchema.$defs?.conflict?.properties?.code?.enum?.join(",") !== "denie
 if (!approvalFixtures.valid.some((item) => item.idempotentReplay === true)) {
   throw new Error("Approval fixtures must cover idempotent replay");
 }
+if (approvalSchema.$defs?.request?.required?.join(",") !== "organizationId,decision,idempotencyKey") {
+  throw new Error("Approval request must require organization-scoped idempotency identity");
+}
+if (approvalFixtures.valid.some((item) => item.ok === true && !item.organizationId)) {
+  throw new Error("Successful approval responses must identify their organization");
+}
+if (!approvalFixtures.invalid.some((item) => item.expectedError === "missing organizationId")) {
+  throw new Error("Approval fixtures must reject successful responses without organizationId");
+}
+if (approvalFixtures.requests.some((request) => !request.organizationId || !request.idempotencyKey)) {
+  throw new Error("Approval request fixtures must include organization and idempotency identity");
+}
 
 console.log(`validated ${fixtures.valid.length} valid and ${fixtures.invalid.length} invalid AUXP fixtures`);

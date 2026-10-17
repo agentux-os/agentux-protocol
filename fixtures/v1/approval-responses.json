@@ -1,8 +1,14 @@
 {
   "valid": [
-    {"ok": true, "approvalId": "approval-01", "decision": "approved", "idempotencyKey": "idem-01"},
-    {"ok": true, "approvalId": "approval-01", "decision": "approved", "idempotencyKey": "idem-01", "idempotentReplay": true},
+    {"ok": true, "organizationId": "org-demo", "approvalId": "approval-01", "decision": "approved", "idempotencyKey": "idem-01"},
+    {"ok": true, "organizationId": "org-demo", "approvalId": "approval-01", "decision": "approved", "idempotencyKey": "idem-01", "idempotentReplay": true},
     {"ok": false, "conflict": {"code": "expired", "message": "approval expired"}}
   ],
-  "invalid": [{"expectedError": "unknown decision", "ok": true, "decision": "maybe"}]
+  "requests": [
+    {"organizationId": "org-demo", "decision": "approved", "reason": "reviewed", "idempotencyKey": "idem-01"}
+  ],
+  "invalid": [
+    {"expectedError": "unknown decision", "ok": true, "decision": "maybe"},
+    {"expectedError": "missing organizationId", "ok": true, "approvalId": "approval-01", "decision": "approved", "idempotencyKey": "idem-01"}
+  ]
 }

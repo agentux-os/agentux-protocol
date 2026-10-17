@@ -139,3 +139,5 @@ The v1 message contract is in [`schemas/v1/messages.schema.json`](schemas/v1/mes
 node scripts/validate-fixtures.mjs
 ```
 
+The Office projection contract is defined in [`schemas/v1/office-projection.schema.json`](schemas/v1/office-projection.schema.json), with approval resolution in [`schemas/v1/approval-resolution.schema.json`](schemas/v1/approval-resolution.schema.json). Approval requests include `organizationId`; Command scopes idempotency by `(organizationId, approvalId, idempotencyKey)` and echoes the organization in successful responses. The event log remains at-least-once: deduplicate by `eventId`, order by `(nodeId, sequence)` and resume from each node's acknowledged cursor.
+
