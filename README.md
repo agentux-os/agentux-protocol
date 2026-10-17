@@ -1,6 +1,14 @@
 # AgentUX Protocol
 
+<p>
+  <a href="https://github.com/agentux-os/agentux-protocol/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/agentux-os/agentux-protocol?label=updated&labelColor=0b0d10&color=4f7d0b"></a>
+  <a href="schemas/v1/messages.schema.json"><img alt="Protocol version" src="https://img.shields.io/badge/protocol-AUXP%20v1-4f7d0b?labelColor=0b0d10"></a>
+  <a href="https://github.com/agentux-os/agentux-command"><img alt="Command integration" src="https://img.shields.io/badge/integrates%20with-AgentUX%20Command-c6f36b?labelColor=0b0d10"></a>
+</p>
+
 AgentUX Protocol (AUXP) is the versioned remote contract between AgentUX Command and AgentUX nodes.
+
+The contract is maintained from the schemas and fixtures in this repository. Compatibility is explicit: additive changes stay in `v1`; breaking semantic changes require a new major protocol version. The README intentionally points to the live schema instead of duplicating a version number that would need manual updates.
 
 It lets a remote control plane coordinate multiple local AgentUX installations without accessing their local sockets, databases, credentials or worktrees directly.
 
