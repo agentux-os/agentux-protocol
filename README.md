@@ -130,3 +130,16 @@ The v1 message contract is in [`schemas/v1/messages.schema.json`](schemas/v1/mes
 node scripts/validate-fixtures.mjs
 ```
 
+The Office read-model contract is also versioned here:
+
+- [`office-projection.schema.json`](schemas/v1/office-projection.schema.json) defines the organization projection, freshness and replay metadata.
+- [`approval-resolution.schema.json`](schemas/v1/approval-resolution.schema.json) defines idempotent approval decisions and typed conflicts.
+- [`office-projection.json`](fixtures/v1/office-projection.json) and [`approval-responses.json`](fixtures/v1/approval-responses.json) are deterministic integration fixtures.
+
+Projection consumers must preserve `organizationId`, immutable
+`definitionVersion`, `projectedAt`, `source`, `freshness` and `lastEventId`.
+Event consumers must tolerate at-least-once delivery, deduplicate by `eventId`,
+order by `(nodeId, sequence)` and resume from the last acknowledged cursor.
+Durable replay and organization-scoped storage remain an implementation concern
+of Command, not of Office.
+
