@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentuxos.org/protocol/v1/office-projection.schema.json",
+  "title": "AgentUX Office projection v1",
+  "type": "object",
+  "$defs": {
+    "projectionMetadata": {
+      "type": "object",
+      "required": ["schemaVersion", "definitionVersion", "projectedAt", "source", "freshness"],
+      "properties": {
+        "schemaVersion": {"const": "office-projection.v1"},
+        "definitionVersion": {"type": "string", "minLength": 1},
+        "projectedAt": {"type": "string", "format": "date-time"},
+        "source": {"type": "string", "minLength": 1},
+        "freshness": {"enum": ["fresh", "stale", "degraded"]},
+        "lastEventId": {"type": "string", "minLength": 1}
+      }
+    },
+    "event": {
+      "type": "object",
+      "required": ["eventId", "eventType", "organizationId", "occurredAt", "sequence"],
+      "properties": {
+        "eventId": {"type": "string", "minLength": 1},
+        "eventType": {"type": "string", "minLength": 1},
+        "organizationId": {"type": "string", "minLength": 1},
+        "nodeId": {"type": "string", "minLength": 1},
+        "runId": {"type": "string", "minLength": 1},
+        "occurredAt": {"type": "string", "format": "date-time"},
+        "receivedAt": {"type": "string", "format": "date-time"},
+        "sequence": {"type": "integer", "minimum": 1},
+        "correlationId": {"type": "string", "minLength": 1},
+        "causationId": {"type": "string", "minLength": 1}
+      }
+    }
+  },
+  "required": ["organizationId", "schemaVersion", "definitionVersion", "projectedAt", "source", "freshness", "lastEventId", "organization", "areas", "missions", "agents", "nodes", "runs", "approvals", "artifacts", "events"],
+  "properties": {
+    "organizationId": {"type": "string", "minLength": 1},
+    "schemaVersion": {"const": "office-projection.v1"},
+    "definitionVersion": {"type": "string", "minLength": 1},
+    "projectedAt": {"type": "string", "format": "date-time"},
+    "source": {"type": "string", "minLength": 1},
+    "freshness": {"enum": ["fresh", "stale", "degraded"]},
+    "lastEventId": {"type": "string", "minLength": 1},
+    "organization": {"type": "object"},
+    "areas": {"type": "array"},
+    "missions": {"type": "array"},
+    "agents": {"type": "array"},
+    "nodes": {"type": "array"},
+    "runs": {"type": "array"},
+    "approvals": {"type": "array"},
+    "artifacts": {"type": "array"},
+    "events": {"type": "array", "items": {"$ref": "#/$defs/event"}}
+  }
+}

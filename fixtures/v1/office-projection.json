@@ -1,0 +1,32 @@
+{
+  "valid": {
+    "organizationId": "org-demo",
+    "schemaVersion": "office-projection.v1",
+    "definitionVersion": "definition-3",
+    "projectedAt": "2026-10-17T12:00:00Z",
+    "source": "command-memory",
+    "freshness": "fresh",
+    "lastEventId": "evt-107",
+    "organization": {"id": "org-demo", "name": "Acme Robotics"},
+    "areas": [{"id": "area-engineering", "name": "Engineering"}],
+    "missions": [{"id": "mission-release", "areaId": "area-engineering", "name": "Ship release", "status": "active"}],
+    "agents": [{"id": "agent-atlas", "name": "Atlas", "status": "active", "missionId": "mission-release"}],
+    "nodes": [{"id": "node-01", "status": "online", "lastHeartbeatAt": "2026-10-17T11:59:50Z"}],
+    "runs": [{"id": "run-01", "missionId": "mission-release", "status": "waiting", "nodeId": "node-01"}],
+    "approvals": [{"id": "approval-01", "runId": "run-01", "status": "pending", "action": "publish", "expiresAt": "2026-10-17T13:00:00Z"}],
+    "artifacts": [],
+    "events": [{"eventId": "evt-107", "eventType": "approval.requested", "organizationId": "org-demo", "nodeId": "node-01", "runId": "run-01", "occurredAt": "2026-10-17T11:59:00Z", "receivedAt": "2026-10-17T11:59:01Z", "sequence": 7, "correlationId": "corr-01"}]
+  },
+  "empty": {
+    "organizationId": "org-empty",
+    "schemaVersion": "office-projection.v1",
+    "definitionVersion": "definition-1",
+    "projectedAt": "2026-10-17T12:00:00Z",
+    "source": "command-memory",
+    "freshness": "fresh",
+    "lastEventId": "evt-001",
+    "organization": {"id": "org-empty", "name": "Empty Org"},
+    "areas": [], "missions": [], "agents": [], "nodes": [], "runs": [], "approvals": [], "artifacts": [], "events": []
+  },
+  "invalid": [{"expectedError": "missing lastEventId", "organizationId": "org-demo", "schemaVersion": "office-projection.v1"}]
+}
