@@ -1,5 +1,14 @@
 # AgentUX Protocol
 
+<p align="center">
+  <a href="https://agentuxos.org">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/agentux-os/agentux/main/brand/svg/lockup-dark.svg">
+      <img alt="AgentUX" src="https://raw.githubusercontent.com/agentux-os/agentux/main/brand/svg/lockup-light.svg" width="320">
+    </picture>
+  </a>
+</p>
+
 <p>
   <a href="https://github.com/agentux-os/agentux-protocol/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/agentux-os/agentux-protocol?label=updated&labelColor=0b0d10&color=4f7d0b"></a>
   <a href="schemas/v1/messages.schema.json"><img alt="Protocol version" src="https://img.shields.io/badge/protocol-AUXP%20v1-4f7d0b?labelColor=0b0d10"></a>
