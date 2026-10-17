@@ -1,5 +1,14 @@
 # AgentUX Protocol
 
+<p align="center">
+  <a href="https://agentuxos.org">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/agentux-os/agentux/main/brand/svg/lockup-dark.svg">
+      <img alt="AgentUX" src="https://raw.githubusercontent.com/agentux-os/agentux/main/brand/svg/lockup-light.svg" width="320">
+    </picture>
+  </a>
+</p>
+
 <p>
   <a href="https://github.com/agentux-os/agentux-protocol/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/agentux-os/agentux-protocol?label=updated&labelColor=0b0d10&color=4f7d0b"></a>
   <a href="schemas/v1/messages.schema.json"><img alt="Protocol version" src="https://img.shields.io/badge/protocol-AUXP%20v1-4f7d0b?labelColor=0b0d10"></a>
@@ -129,17 +138,4 @@ The v1 message contract is in [`schemas/v1/messages.schema.json`](schemas/v1/mes
 ```sh
 node scripts/validate-fixtures.mjs
 ```
-
-The Office read-model contract is also versioned here:
-
-- [`office-projection.schema.json`](schemas/v1/office-projection.schema.json) defines the organization projection, freshness and replay metadata.
-- [`approval-resolution.schema.json`](schemas/v1/approval-resolution.schema.json) defines idempotent approval decisions and typed conflicts.
-- [`office-projection.json`](fixtures/v1/office-projection.json) and [`approval-responses.json`](fixtures/v1/approval-responses.json) are deterministic integration fixtures.
-
-Projection consumers must preserve `organizationId`, immutable
-`definitionVersion`, `projectedAt`, `source`, `freshness` and `lastEventId`.
-Event consumers must tolerate at-least-once delivery, deduplicate by `eventId`,
-order by `(nodeId, sequence)` and resume from the last acknowledged cursor.
-Durable replay and organization-scoped storage remain an implementation concern
-of Command, not of Office.
 
