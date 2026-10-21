@@ -79,6 +79,10 @@ Run-related messages also carry `missionId`, `runId` and, when applicable, `sess
 | `request.resolve` | command → node | Resolve a human approval/question |
 | `run.snapshot` | command → node | Request current local state |
 | `bus.post` | command → node | Deliver an authorized human message to a run |
+| `harness.list` | command → node | The node's agent CLIs: installed, signed in, version, spend, plan usage, usage limits |
+| `harness.test` | command → node | Send one agent a short test prompt; the result says whether it answered |
+| `limits.clear` | command → node | An operator lifted a usage limit (credits added, plan reset) |
+| `preferences.set` | command → node | Replace the node's agent preferences (order, role agents and models, fallbacks, stall minutes, notifications) |
 
 `run.start` must include a complete execution request: repository, prompt/issue, pipeline reference, roles, budget, isolation policy and requested capabilities. It must not include provider credentials.
 
@@ -97,8 +101,23 @@ Run-related messages also carry `missionId`, `runId` and, when applicable, `sess
 | `run.failed` | Technical run failed |
 | `artifact.available` | Log, diff, plan or report is available |
 | `node.alert` | Local safety, capacity or process issue |
+| `harness.status` | The node's agent CLIs changed (same shape as `harness.list`'s result) |
+| `harness.limits_changed` | Usage limits in force changed: every limit still in force |
+| `command.denied` | The node's policy refused a command, or holds it for local confirmation (`reason`) |
 
 Events are at-least-once. Consumers deduplicate by `eventId`, order by `(nodeId, sequence)`, and persist the last acknowledged sequence.
+
+## Node policy
+
+Every node decides what Command may do on it, in `/etc/agentux/node-policy.yaml`. Each command method is `allow`, `confirm` (held until someone at the node accepts it in the cockpit or with `aux`) or `deny`. The default policy:
+
+| Method | Default |
+|---|---|
+| `run.snapshot`, `harness.list`, `harness.test` | `allow` |
+| `run.cancel`, `run.pause`, `run.resume`, `request.resolve`, `bus.post`, `limits.clear` | `allow` |
+| `run.start`, `preferences.set` | `confirm` |
+
+A held or refused command answers with a JSON-RPC error and a `command.denied` event carrying `commandId`, `method` and `reason` (`awaiting_local_confirmation`, `denied_by_policy`). A confirmed command runs with its original `commandId`. There is no method that runs a shell command or carries credentials; API keys stay in the node's own secret store.
 
 ## Reliability rules
 
