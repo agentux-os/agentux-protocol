@@ -10,9 +10,14 @@
         "nodeId": "node-01",
         "messageId": "msg-01",
         "occurredAt": "2026-10-15T12:00:00Z",
-        "capabilities": ["run.start", "run.snapshot"],
+        "capabilities": [
+          "run.start",
+          "run.snapshot"
+        ],
         "agentuxVersion": "0.5.0",
-        "supportedProtocolVersions": ["v1"]
+        "supportedProtocolVersions": [
+          "v1"
+        ]
       }
     },
     {
@@ -46,15 +51,210 @@
         "repository": "https://github.com/example/project",
         "prompt": "Implement the requested change",
         "pipeline": "default",
-        "roles": ["implementer", "reviewer"],
-        "budget": {"maxUsd": 10},
+        "roles": [
+          "implementer",
+          "reviewer"
+        ],
+        "budget": {
+          "maxUsd": 10
+        },
         "isolationPolicy": "worktree",
-        "requestedCapabilities": ["git", "network_read"]
+        "requestedCapabilities": [
+          "git",
+          "network_read"
+        ]
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "method": "harness.status",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "msg-10",
+        "occurredAt": "2026-10-21T12:00:00Z",
+        "eventId": "evt-10",
+        "sequence": 10,
+        "harnesses": [
+          {
+            "id": "claude-code",
+            "installed": true,
+            "signedIn": true,
+            "version": "2.1.30",
+            "experimental": false,
+            "usage": {
+              "todayUsd": 1.5,
+              "weekUsd": 9.2,
+              "weekSessions": 4
+            },
+            "quota": [],
+            "limits": []
+          },
+          {
+            "id": "codex",
+            "installed": true,
+            "signedIn": true,
+            "version": "0.153.0",
+            "experimental": false,
+            "usage": {
+              "todayUsd": 0,
+              "weekUsd": 3.1,
+              "weekSessions": 2
+            },
+            "quota": [
+              {
+                "label": "weekly",
+                "usedPercent": 81,
+                "resetsAt": "2026-10-24T09:00:00Z"
+              }
+            ],
+            "limits": []
+          }
+        ]
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "method": "harness.limits_changed",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "msg-11",
+        "occurredAt": "2026-10-21T12:05:00Z",
+        "eventId": "evt-11",
+        "sequence": 11,
+        "limits": [
+          {
+            "harness": "claude-code",
+            "model": null,
+            "kind": "weekly",
+            "until": "2026-10-27T09:00:00Z",
+            "untilKnown": true,
+            "message": "Weekly limit reached"
+          }
+        ]
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "id": "test-1",
+      "method": "harness.test",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "msg-12",
+        "occurredAt": "2026-10-21T12:06:00Z",
+        "commandId": "cmd-10",
+        "harness": "opencode"
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "id": "clear-1",
+      "method": "limits.clear",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "msg-13",
+        "occurredAt": "2026-10-21T12:07:00Z",
+        "commandId": "cmd-11",
+        "harness": "claude-code"
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "id": "prefs-1",
+      "method": "preferences.set",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "msg-14",
+        "occurredAt": "2026-10-21T12:08:00Z",
+        "commandId": "cmd-12",
+        "preferences": {
+          "order": [
+            "opencode",
+            "claude-code"
+          ],
+          "roles": {
+            "planner": {
+              "harness": "claude-code",
+              "model": "opus"
+            }
+          },
+          "fallback": null,
+          "idleMinutes": 10,
+          "toolMinutes": 60,
+          "notifications": true
+        }
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "method": "command.denied",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "msg-15",
+        "occurredAt": "2026-10-21T12:08:01Z",
+        "eventId": "evt-12",
+        "sequence": 12,
+        "commandId": "cmd-12",
+        "method": "preferences.set",
+        "reason": "awaiting_local_confirmation"
       }
     }
   ],
   "invalid": [
-    {"expectedError": "missing protocolVersion", "jsonrpc": "2.0", "method": "node.heartbeat", "params": {}},
-    {"expectedError": "provider credential in payload", "jsonrpc": "2.0", "method": "run.start", "params": {"apiKey": "must-not-be-here"}}
+    {
+      "expectedError": "missing protocolVersion",
+      "jsonrpc": "2.0",
+      "method": "node.heartbeat",
+      "params": {}
+    },
+    {
+      "expectedError": "provider credential in payload",
+      "jsonrpc": "2.0",
+      "method": "run.start",
+      "params": {
+        "apiKey": "must-not-be-here"
+      }
+    },
+    {
+      "expectedError": "harness.test without a harness",
+      "jsonrpc": "2.0",
+      "id": "t",
+      "method": "harness.test",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "msg-90",
+        "occurredAt": "2026-10-21T12:00:00Z",
+        "commandId": "cmd-90"
+      }
+    },
+    {
+      "expectedError": "provider credential in preferences.set",
+      "jsonrpc": "2.0",
+      "id": "p",
+      "method": "preferences.set",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "msg-91",
+        "occurredAt": "2026-10-21T12:00:00Z",
+        "commandId": "cmd-91",
+        "preferences": {},
+        "apiKey": "must-not-be-here"
+      }
+    }
   ]
 }
