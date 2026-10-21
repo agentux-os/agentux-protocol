@@ -57,6 +57,6 @@
     {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "harness.test"}, "params": {"required": ["commandId", "harness"]}}}]},
     {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "limits.clear"}, "params": {"required": ["commandId", "harness"]}}}]},
     {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "preferences.set"}, "params": {"required": ["commandId", "preferences"]}}}]},
-    {"allOf": [{"$ref": "#/$defs/notification"}, {"properties": {"method": {"enum": ["node.status_changed", "run.accepted", "run.started", "run.updated", "session.event", "approval.requested", "gate.completed", "run.completed", "run.failed", "artifact.available", "node.alert", "harness.status", "harness.limits_changed", "command.denied"]}, "params": {"required": ["eventId", "sequence"]}}}]}
+    {"allOf": [{"$ref": "#/$defs/notification"}, {"properties": {"method": {"enum": ["node.status_changed", "run.accepted", "run.started", "run.updated", "session.event", "approval.requested", "gate.completed", "run.completed", "run.failed", "artifact.available", "node.alert", "harness.status", "harness.limits_changed", "command.denied", "command.completed"]}, "params": {"required": ["eventId", "sequence"]}}}]}
   ]
 }
