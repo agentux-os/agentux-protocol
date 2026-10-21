@@ -44,6 +44,10 @@ Command is authoritative for the organizational mission. The node is authoritati
 
 The node must not expose the local `agentuxd` Unix socket to the network.
 
+**Connections.** The node opens `wss://<command>/v1/protocol/connect?nodeId=<id>` with `Authorization: Bearer <node token>`. Over it Command sends command requests and the node answers each with a JSON-RPC response (`result`, or `error` with `code` and `message`). Node events may go over the same socket or be POSTed to `/v1/protocol/messages`; Command accepts both. Error codes: `-32601` the node does not implement the method, `-32602` invalid params, `-32010` held for local confirmation, `-32011` denied by the node's policy, `-32012` the local daemon refused or failed.
+
+**`run.start` on a node.** `repository` is the git URL of a project the node has cloned, or clones (into `~/src`). `roles` names the roles the mission expects; optional `agents` (role → harness) and `models` (role → model) choose them, within the node's own agents. `prompt`, optional `title` and `budget.maxUsd` complete it.
+
 ## Identity and correlation
 
 Every message that changes or reports state carries:
@@ -104,6 +108,7 @@ Run-related messages also carry `missionId`, `runId` and, when applicable, `sess
 | `harness.status` | The node's agent CLIs changed (same shape as `harness.list`'s result) |
 | `harness.limits_changed` | Usage limits in force changed: every limit still in force |
 | `command.denied` | The node's policy refused a command, or holds it for local confirmation (`reason`) |
+| `command.completed` | A command held for confirmation ran (or was rejected) at the node: `commandId`, `method`, `ok`, `result` or `error`, `confirmedBy` |
 
 Events are at-least-once. Consumers deduplicate by `eventId`, order by `(nodeId, sequence)`, and persist the last acknowledged sequence.
 
@@ -117,7 +122,7 @@ Every node decides what Command may do on it, in `/etc/agentux/node-policy.yaml`
 | `run.cancel`, `run.pause`, `run.resume`, `request.resolve`, `bus.post`, `limits.clear` | `allow` |
 | `run.start`, `preferences.set` | `confirm` |
 
-A held or refused command answers with a JSON-RPC error and a `command.denied` event carrying `commandId`, `method` and `reason` (`awaiting_local_confirmation`, `denied_by_policy`). A confirmed command runs with its original `commandId`. There is no method that runs a shell command or carries credentials; API keys stay in the node's own secret store.
+A held or refused command answers with a JSON-RPC error (`-32010` held, `-32011` denied) and a `command.denied` event carrying `commandId`, `method` and `reason` (`awaiting_local_confirmation`, `denied_by_policy`). When someone at the node accepts or rejects a held command, a `command.completed` event reports it under the original `commandId`. A command sent again with the same `commandId` returns the first answer. There is no method that runs a shell command or carries credentials; API keys stay in the node's own secret store.
 
 ## Reliability rules
 

@@ -209,6 +209,29 @@
         "method": "preferences.set",
         "reason": "awaiting_local_confirmation"
       }
+    },
+    {
+      "jsonrpc": "2.0",
+      "method": "command.completed",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "msg-16",
+        "occurredAt": "2026-10-21T12:10:00Z",
+        "eventId": "evt-13",
+        "sequence": 13,
+        "commandId": "cmd-12",
+        "method": "preferences.set",
+        "confirmedBy": "local",
+        "ok": true,
+        "result": {
+          "order": [
+            "opencode",
+            "claude-code"
+          ]
+        }
+      }
     }
   ],
   "invalid": [
