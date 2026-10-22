@@ -107,8 +107,11 @@ pub const PRODUCT: &str = "agentux-command";
 
 /// `POST /v1/enroll`: a node redeems a token. `nodeName` and `hostname` may
 /// be null.
+///
+/// Enrollment messages ignore fields they do not know, like every AUXP v1
+/// message: fields added later in v1 must not break older nodes or servers.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
 pub struct Redemption {
     pub token: String,
     #[serde(default)]
@@ -128,7 +131,7 @@ impl Redemption {
 /// The answer to a redemption: the node's identity and its credential, the
 /// only time the credential is ever returned.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
 pub struct Enrolled {
     pub instance_id: String,
     pub organization_id: String,
@@ -159,7 +162,7 @@ impl Enrolled {
 /// A refused redemption (401 or 409): a reason, and this server's instance
 /// when the token belongs to another one. Never a credential.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
 pub struct Refused {
     pub error: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]

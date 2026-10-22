@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://agentuxos.org/protocol/v1/enrollment.schema.json",
   "title": "AgentUX Protocol v1 enrollment",
-  "description": "How a node joins one Command server: the server's identity (GET /v1/instance), the token an operator issues, its redemption (POST /v1/enroll) and the node credential it yields. See the README's Enrollment and sessions section.",
+  "description": "How a node joins one Command server: the server's identity (GET /v1/instance), the token an operator issues, its redemption (POST /v1/enroll) and the node credential it yields. See the README's Enrollment and sessions section. Fields added later in v1 are ignored by readers that do not know them.",
   "$defs": {
     "instanceId": {
       "description": "A Command server's identity, created once and kept for its database's life.",
@@ -27,46 +27,102 @@
     "instance": {
       "description": "GET /v1/instance: who this server is. Unauthenticated; carries no tenant data.",
       "type": "object",
-      "required": ["product", "instanceId", "protocolVersions"],
+      "required": [
+        "product",
+        "instanceId",
+        "protocolVersions"
+      ],
       "properties": {
-        "product": { "const": "agentux-command" },
-        "instanceId": { "$ref": "#/$defs/instanceId" },
-        "protocolVersions": { "type": "array", "items": { "type": "string" }, "contains": { "const": "v1" } }
+        "product": {
+          "const": "agentux-command"
+        },
+        "instanceId": {
+          "$ref": "#/$defs/instanceId"
+        },
+        "protocolVersions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "contains": {
+            "const": "v1"
+          }
+        }
       }
     },
     "redemption": {
       "description": "POST /v1/enroll request. nodeName and hostname may be null or absent.",
       "type": "object",
-      "required": ["token"],
+      "required": [
+        "token"
+      ],
       "properties": {
-        "token": { "$ref": "#/$defs/enrollmentToken" },
-        "nodeName": { "type": ["string", "null"] },
-        "hostname": { "type": ["string", "null"] }
-      },
-      "additionalProperties": false
+        "token": {
+          "$ref": "#/$defs/enrollmentToken"
+        },
+        "nodeName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "hostname": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
     },
     "enrolled": {
       "description": "POST /v1/enroll answer (200). approved is false while an operator still has to approve the node.",
       "type": "object",
-      "required": ["instanceId", "organizationId", "nodeId", "nodeSecret", "approved"],
+      "required": [
+        "instanceId",
+        "organizationId",
+        "nodeId",
+        "nodeSecret",
+        "approved"
+      ],
       "properties": {
-        "instanceId": { "$ref": "#/$defs/instanceId" },
-        "organizationId": { "type": "string", "minLength": 1 },
-        "nodeId": { "$ref": "#/$defs/nodeId" },
-        "nodeSecret": { "$ref": "#/$defs/nodeCredential" },
-        "approved": { "type": "boolean" }
-      },
-      "additionalProperties": false
+        "instanceId": {
+          "$ref": "#/$defs/instanceId"
+        },
+        "organizationId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "nodeId": {
+          "$ref": "#/$defs/nodeId"
+        },
+        "nodeSecret": {
+          "$ref": "#/$defs/nodeCredential"
+        },
+        "approved": {
+          "type": "boolean"
+        }
+      }
     },
     "refused": {
       "description": "A refused redemption: 401 (unknown, used or expired token) or 409 (a token of another Command server, with this server's instanceId; or a node name already enrolled).",
       "type": "object",
-      "required": ["error"],
+      "required": [
+        "error"
+      ],
       "properties": {
-        "error": { "type": "string", "minLength": 1 },
-        "instanceId": { "$ref": "#/$defs/instanceId" }
+        "error": {
+          "type": "string",
+          "minLength": 1
+        },
+        "instanceId": {
+          "$ref": "#/$defs/instanceId"
+        }
       },
-      "not": { "required": ["nodeSecret"] }
+      "not": {
+        "required": [
+          "nodeSecret"
+        ]
+      }
     }
   }
 }
