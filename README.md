@@ -69,6 +69,32 @@ Run-related messages also carry `missionId`, `runId` and, when applicable, `sess
 5. Node sends events and acknowledges replay cursors.
 6. On reconnect, node sends `node.resume` with the last acknowledged sequence.
 
+## Enrollment and sessions
+
+The contract is [`schemas/v1/enrollment.schema.json`](schemas/v1/enrollment.schema.json), with examples in [`fixtures/v1/enrollment.json`](fixtures/v1/enrollment.json).
+
+**Identity.** Every Command server has an instance id (`cmd-` and 16 hex digits), created once and kept for its database's life. `GET /v1/instance` answers `{ product, instanceId, protocolVersions }`, unauthenticated and with no tenant data.
+
+**Enrollment.** An operator issues enrollment tokens (`auxe1_<instanceId>_<64 hex>`) for one organization. A token names its server, is single use, expires (24 hours by default, 30 days at most), may be for one node name only, and may require an operator's approval. The server keeps only its hash and shows it once. A node:
+
+1. reads the instance id from the token and compares it with `GET /v1/instance` at the address it was given, and stops on a mismatch **before sending the token**;
+2. redeems it with `POST /v1/enroll` `{ token, nodeName?, hostname? }` and gets `{ instanceId, organizationId, nodeId, nodeSecret, approved }`. The node id is unique on that server: a suffix is added when a name is taken, and never someone else's id is reused. A refusal is 401 (unknown, used or expired token) or 409 (another server's token, answered with this server's `instanceId`, or a node name already enrolled);
+3. keeps the credential (`auxn1_<64 hex>`) readable by its user only, and **pins** the instance id.
+
+**Credentials.** A node credential is bound to its node id and organization on one server. It is returned once, by the redemption, and never in any other answer, event or log line. Every node request carries it as `Authorization: Bearer`. Messages for another node or organization are refused (401).
+
+**Approval.** A node enrolled with a token that requires approval may send `node.hello` and `node.heartbeat` only (it shows as `pending_approval`). Anything else answers 403 until an operator approves it.
+
+**Pinning.** A pinned node checks the instance on every answer that names one (`result.instanceId` of its messages), on the command connection (`X-AgentUX-Command-Instance` response header) and in every command (`commandInstanceId`). It refuses commands from any other instance and stops reporting to a server that answers as another.
+
+**Revocation and rotation.** Revoking a node invalidates its credential at once and closes its command connection; its messages answer 401. Credentials do not expire on their own. Rotation is re-enrollment: an operator revokes the node and issues a new token, and the node enrolls again, keeping its node id when the token names it.
+
+**Replay protection.** Tokens are single use and expiring. Commands are idempotent by `commandId`: a repeated command gets the first answer. Events are applied once per `(nodeId, sequence)`. A command carries the issuing server's `commandInstanceId`, so a command captured from one server is refused by nodes of another. Remote connections use TLS; plain HTTP is for the node's own machine only.
+
+**Sessions and reconnect.** The node opens the command connection (`/v1/protocol/connect?nodeId=`, WebSocket, its credential) and keeps it with backoff; a new connection replaces the node's previous one. Events wait in the node's ordered outbox while Command is unreachable and are sent again in order on reconnect; duplicates are ignored by sequence. `node.resume` (asking Command for missed events) is specified and not implemented yet. An accepted run never depends on the connection.
+
+**Versions.** `node.hello` lists `supportedProtocolVersions`, which must contain `v1`. A message with any other `protocolVersion` is refused (400, `unsupported protocol version`), and so is a method a server does not know. A node answers a command it does not implement with `-32601`.
+
 ## Commands
 
 | Method | Direction | Purpose |
