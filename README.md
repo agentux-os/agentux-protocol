@@ -165,3 +165,15 @@ node scripts/validate-fixtures.mjs
 
 The Office projection contract is defined in [`schemas/v1/office-projection.schema.json`](schemas/v1/office-projection.schema.json), with approval resolution in [`schemas/v1/approval-resolution.schema.json`](schemas/v1/approval-resolution.schema.json). Approval requests include `organizationId`; Command scopes idempotency by `(organizationId, approvalId, idempotencyKey)` and echoes the organization in successful responses. The event log remains at-least-once: deduplicate by `eventId`, order by `(nodeId, sequence)` and resume from each node's acknowledged cursor.
 
+## Rust: the `auxp` crate
+
+[`crates/auxp`](crates/auxp) is AUXP for Rust: the methods and the params each requires, message validation, error codes, the node policy defaults, enrollment token and credential formats, and the provision file. The node gateway (agentux-core) and the Command server (agentux-command) both depend on it, so the two sides cannot drift apart. Its tests run against this repository's schemas and fixtures: a schema change that the crate does not follow fails CI.
+
+```toml
+auxp = { git = "https://github.com/agentux-os/agentux-protocol", rev = "<commit>" }
+```
+
+```sh
+cargo test        # the crate, against schemas/ and fixtures/
+node scripts/validate-fixtures.mjs
+```
