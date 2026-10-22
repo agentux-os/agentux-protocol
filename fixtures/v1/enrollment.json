@@ -1,0 +1,41 @@
+{
+  "instance": {
+    "valid": [
+      { "product": "agentux-command", "instanceId": "cmd-0123456789abcdef", "protocolVersions": ["v1"] }
+    ],
+    "invalid": [
+      { "expectedError": "instance id shape", "product": "agentux-command", "instanceId": "cmd-XYZ", "protocolVersions": ["v1"] },
+      { "expectedError": "no v1", "product": "agentux-command", "instanceId": "cmd-0123456789abcdef", "protocolVersions": ["v2"] }
+    ]
+  },
+  "redemption": {
+    "valid": [
+      { "token": "auxe1_cmd-0123456789abcdef_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "nodeName": "build-01", "hostname": "build-01" },
+      { "token": "auxe1_cmd-0123456789abcdef_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "nodeName": null, "hostname": "box" }
+    ],
+    "invalid": [
+      { "expectedError": "a node credential is not a token", "token": "auxn1_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" },
+      { "expectedError": "short secret", "token": "auxe1_cmd-0123456789abcdef_short" },
+      { "expectedError": "unknown field", "token": "auxe1_cmd-0123456789abcdef_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "organizationId": "acme" }
+    ]
+  },
+  "enrolled": {
+    "valid": [
+      { "instanceId": "cmd-0123456789abcdef", "organizationId": "acme", "nodeId": "build-01", "nodeSecret": "auxn1_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "approved": true },
+      { "instanceId": "cmd-0123456789abcdef", "organizationId": "acme", "nodeId": "node-box-2", "nodeSecret": "auxn1_cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "approved": false }
+    ],
+    "invalid": [
+      { "expectedError": "missing nodeSecret", "instanceId": "cmd-0123456789abcdef", "organizationId": "acme", "nodeId": "build-01", "approved": true },
+      { "expectedError": "node id shape", "instanceId": "cmd-0123456789abcdef", "organizationId": "acme", "nodeId": "Build 01", "nodeSecret": "auxn1_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "approved": true }
+    ]
+  },
+  "refused": {
+    "valid": [
+      { "error": "the enrollment token was already used" },
+      { "error": "the enrollment token belongs to another Command server", "instanceId": "cmd-0123456789abcdef" }
+    ],
+    "invalid": [
+      { "expectedError": "a refusal never carries a credential", "error": "x", "nodeSecret": "auxn1_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" }
+    ]
+  }
+}

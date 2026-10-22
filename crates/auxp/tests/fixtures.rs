@@ -79,3 +79,76 @@ fn the_schema_and_the_crate_list_the_same_methods_and_params() {
         .collect();
     assert_eq!(ours, in_schema);
 }
+
+/// Parses and checks one fixture.
+type Check = fn(&Value) -> Result<(), String>;
+
+fn each<'a>(fixtures: &'a Value, group: &str, kind: &str) -> &'a Vec<Value> {
+    fixtures[group][kind]
+        .as_array()
+        .unwrap_or_else(|| panic!("{group}.{kind}"))
+}
+
+/// Parses `value` as `T` and runs its check.
+fn accepted<T: serde::de::DeserializeOwned>(
+    value: &Value,
+    check: impl Fn(&T) -> Result<(), String>,
+) -> Result<(), String> {
+    let mut value = value.clone();
+    if let Some(object) = value.as_object_mut() {
+        object.remove("expectedError");
+    }
+    let parsed: T = serde_json::from_value(value).map_err(|e| e.to_string())?;
+    check(&parsed)
+}
+
+#[test]
+fn enrollment_fixtures() {
+    use auxp::enrollment::{Enrolled, Instance, Redemption, Refused};
+    let fixtures = read("fixtures/v1/enrollment.json");
+    let cases: [(&str, Check); 4] = [
+        ("instance", |v| accepted::<Instance>(v, Instance::check)),
+        ("redemption", |v| {
+            accepted::<Redemption>(v, Redemption::check)
+        }),
+        ("enrolled", |v| accepted::<Enrolled>(v, Enrolled::check)),
+        ("refused", |v| accepted::<Refused>(v, |_| Ok(()))),
+    ];
+    for (group, check) in cases {
+        for value in each(&fixtures, group, "valid") {
+            if let Err(e) = check(value) {
+                panic!("valid {group} fixture refused: {e}: {value}");
+            }
+        }
+        for value in each(&fixtures, group, "invalid") {
+            assert!(
+                check(value).is_err(),
+                "invalid {group} fixture accepted: {}",
+                value["expectedError"]
+            );
+        }
+    }
+}
+
+#[test]
+fn enrollment_shapes_match_the_schema() {
+    let schema = read("schemas/v1/enrollment.schema.json");
+    let pattern = |name: &str| {
+        schema["$defs"][name]["pattern"]
+            .as_str()
+            .unwrap()
+            .to_string()
+    };
+    assert_eq!(pattern("instanceId"), "^cmd-[0-9a-f]{16}$");
+    assert_eq!(
+        pattern("enrollmentToken"),
+        "^auxe1_cmd-[0-9a-f]{16}_[0-9a-f]{64}$"
+    );
+    assert_eq!(pattern("nodeCredential"), "^auxn1_[0-9a-f]{64}$");
+    let token = auxp::enrollment::token("cmd-0123456789abcdef", &"a".repeat(64));
+    assert!(auxp::enrollment::token_instance(&token).is_some());
+    assert!(auxp::enrollment::valid_credential(
+        &auxp::enrollment::credential(&"b".repeat(64))
+    ));
+    assert!(!auxp::enrollment::valid_node_id("Build 01"));
+}

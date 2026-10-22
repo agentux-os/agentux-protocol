@@ -68,6 +68,19 @@ pub fn validate(message: &Value) -> Result<(), String> {
             {
                 return Err("node.hello requires capabilities, agentuxVersion and supportedProtocolVersions".into());
             }
+            let speaks_v1 =
+                params["supportedProtocolVersions"]
+                    .as_array()
+                    .is_some_and(|versions| {
+                        versions
+                            .iter()
+                            .any(|v| v.as_str() == Some(PROTOCOL_VERSION))
+                    });
+            if !speaks_v1 {
+                return Err(format!(
+                    "node.hello: the node does not support {PROTOCOL_VERSION}"
+                ));
+            }
         }
         "node.heartbeat" if text("status").is_empty() => {
             return Err("node.heartbeat requires status and capacity".into());
@@ -167,6 +180,14 @@ mod tests {
         let hello = json!({"capabilities": ["run.start"], "agentuxVersion": "0.5.0", "supportedProtocolVersions": ["v1"]});
         validate(&message("node.hello", hello)).unwrap();
         assert!(validate(&message("node.hello", json!({"capabilities": [], "agentuxVersion": "0.5.0", "supportedProtocolVersions": ["v1"]}))).is_err());
+        assert!(
+            validate(&message(
+                "node.hello",
+                json!({"capabilities": ["run.start"], "agentuxVersion": "9.0.0", "supportedProtocolVersions": ["v2"]})
+            ))
+            .is_err(),
+            "a node without v1 is refused"
+        );
         validate(&message(
             "node.heartbeat",
             json!({"status": "ready", "capacity": {}}),

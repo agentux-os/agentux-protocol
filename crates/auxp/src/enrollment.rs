@@ -7,6 +7,8 @@
 //! credential (`auxn1_<secret>`) is bound to one node, organization and
 //! server.
 
+use serde::{Deserialize, Serialize};
+
 /// Enrollment tokens start with this.
 pub const TOKEN_PREFIX: &str = "auxe1_";
 /// Node credentials start with this.
@@ -42,6 +44,126 @@ pub fn token(instance: &str, secret_hex: &str) -> String {
 /// A node credential with `secret_hex`.
 pub fn credential(secret_hex: &str) -> String {
     format!("{CREDENTIAL_PREFIX}{secret_hex}")
+}
+
+/// Whether `credential` has the shape of a node credential.
+pub fn valid_credential(credential: &str) -> bool {
+    credential
+        .strip_prefix(CREDENTIAL_PREFIX)
+        .is_some_and(|secret| secret.len() == SECRET_HEX_LEN && is_lower_hex(secret))
+}
+
+/// Whether `id` is a node id: lowercase letters, digits, `.`, `_`, `-`,
+/// starting with a letter or digit, at most 63 long.
+pub fn valid_node_id(id: &str) -> bool {
+    let bytes = id.as_bytes();
+    !bytes.is_empty()
+        && bytes.len() <= 63
+        && (bytes[0].is_ascii_lowercase() || bytes[0].is_ascii_digit())
+        && bytes
+            .iter()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b"._-".contains(b))
+}
+
+/// `GET /v1/instance`: who a Command server is. Nodes compare it with the
+/// instance their token names before sending the token.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Instance {
+    pub product: String,
+    pub instance_id: String,
+    pub protocol_versions: Vec<String>,
+}
+
+impl Instance {
+    pub fn new(instance_id: &str) -> Self {
+        Self {
+            product: PRODUCT.into(),
+            instance_id: instance_id.into(),
+            protocol_versions: vec![crate::PROTOCOL_VERSION.into()],
+        }
+    }
+
+    pub fn check(&self) -> Result<(), String> {
+        if self.product != PRODUCT {
+            return Err(format!("not an AgentUX Command server: {}", self.product));
+        }
+        if !valid_instance_id(&self.instance_id) {
+            return Err(format!("not an instance id: {}", self.instance_id));
+        }
+        if !self
+            .protocol_versions
+            .iter()
+            .any(|v| v == crate::PROTOCOL_VERSION)
+        {
+            return Err("the server does not speak AUXP v1".into());
+        }
+        Ok(())
+    }
+}
+
+/// The product name `GET /v1/instance` answers with.
+pub const PRODUCT: &str = "agentux-command";
+
+/// `POST /v1/enroll`: a node redeems a token. `nodeName` and `hostname` may
+/// be null.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct Redemption {
+    pub token: String,
+    #[serde(default)]
+    pub node_name: Option<String>,
+    #[serde(default)]
+    pub hostname: Option<String>,
+}
+
+impl Redemption {
+    pub fn check(&self) -> Result<(), String> {
+        token_instance(&self.token)
+            .map(|_| ())
+            .ok_or_else(|| "not an enrollment token".into())
+    }
+}
+
+/// The answer to a redemption: the node's identity and its credential, the
+/// only time the credential is ever returned.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct Enrolled {
+    pub instance_id: String,
+    pub organization_id: String,
+    pub node_id: String,
+    pub node_secret: String,
+    /// False while an operator still has to approve the node.
+    pub approved: bool,
+}
+
+impl Enrolled {
+    pub fn check(&self) -> Result<(), String> {
+        if !valid_instance_id(&self.instance_id) {
+            return Err(format!("not an instance id: {}", self.instance_id));
+        }
+        if self.organization_id.is_empty() {
+            return Err("organizationId is required".into());
+        }
+        if !valid_node_id(&self.node_id) {
+            return Err(format!("not a node id: {}", self.node_id));
+        }
+        if !valid_credential(&self.node_secret) {
+            return Err("nodeSecret is not a node credential".into());
+        }
+        Ok(())
+    }
+}
+
+/// A refused redemption (401 or 409): a reason, and this server's instance
+/// when the token belongs to another one. Never a credential.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct Refused {
+    pub error: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub instance_id: Option<String>,
 }
 
 fn is_lower_hex(s: &str) -> bool {
