@@ -112,7 +112,11 @@ fn enrollment_fixtures() {
             accepted::<Redemption>(v, Redemption::check)
         }),
         ("enrolled", |v| accepted::<Enrolled>(v, Enrolled::check)),
-        ("refused", |v| accepted::<Refused>(v, |_| Ok(()))),
+        // The schema's `not: required nodeSecret`: a refusal never carries a credential.
+        ("refused", |v| match v.get("nodeSecret") {
+            Some(_) => Err("a refusal carries a credential".into()),
+            None => accepted::<Refused>(v, |_| Ok(())),
+        }),
     ];
     for (group, check) in cases {
         for value in each(&fixtures, group, "valid") {
