@@ -1,0 +1,15 @@
+[package]
+name = "auxp"
+description = "AUXP v1, the AgentUX Protocol between AgentUX Command and its nodes: messages, methods, error codes, node policy defaults, enrollment formats and provision files"
+version.workspace = true
+edition.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+jiff = "0.2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[lints]
+workspace = true
