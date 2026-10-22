@@ -13,12 +13,14 @@
 //! - [`enrollment`]: enrollment tokens, node credentials, instance ids.
 //! - [`provision`]: the provision file `aux provision` reads and Command
 //!   hands out with tokens.
+//! - [`schemas`]: the JSON Schemas themselves, for contract tests.
 
 pub mod codes;
 pub mod enrollment;
 pub mod methods;
 pub mod policy;
 pub mod provision;
+pub mod schemas;
 
 mod message;
 
