@@ -40,6 +40,9 @@ pub fn validate(message: &Value) -> Result<(), String> {
     if let Err(e) = text("occurredAt").parse::<jiff::Timestamp>() {
         return Err(format!("occurredAt must be RFC3339: {e}"));
     }
+    if let Some(isolation) = params.get("agentIsolation") {
+        validate_agent_isolation(method, isolation)?;
+    }
     if CREDENTIAL_PARAMS
         .iter()
         .any(|name| params.contains_key(*name))
@@ -138,6 +141,42 @@ pub fn validate(message: &Value) -> Result<(), String> {
     Ok(())
 }
 
+fn validate_agent_isolation(method: &str, value: &Value) -> Result<(), String> {
+    if !matches!(method, "run.updated" | "run.completed" | "run.failed") {
+        return Err(
+            "agentIsolation is only valid on run.updated, run.completed and run.failed".into(),
+        );
+    }
+    let Some(object) = value.as_object() else {
+        return Err("agentIsolation must be an object".into());
+    };
+    if object
+        .keys()
+        .any(|key| !matches!(key.as_str(), "mode" | "network" | "source"))
+    {
+        return Err("agentIsolation contains an unknown field".into());
+    }
+    let mode = object.get("mode").and_then(Value::as_str).unwrap_or("");
+    if !matches!(mode, "none" | "bubblewrap") {
+        return Err("agentIsolation.mode must be none or bubblewrap".into());
+    }
+    let source = object.get("source").and_then(Value::as_str).unwrap_or("");
+    if !matches!(source, "project" | "node-policy" | "command" | "default") {
+        return Err("agentIsolation.source is invalid".into());
+    }
+    match (mode, object.get("network")) {
+        ("bubblewrap", Some(Value::String(network)))
+            if matches!(network.as_str(), "outbound" | "none") => {}
+        ("bubblewrap", _) => {
+            return Err("bubblewrap agentIsolation requires a valid network mode".into());
+        }
+        ("none", None) => {}
+        ("none", Some(_)) => return Err("host agentIsolation must not include network".into()),
+        _ => unreachable!("mode was validated above"),
+    }
+    Ok(())
+}
+
 fn contains_forbidden_activity_key(value: &Value) -> bool {
     match value {
         Value::Object(map) => map.iter().any(|(key, child)| {
@@ -184,6 +223,8 @@ pub struct Params {
     pub through_sequence: Option<i64>,
     #[serde(skip_serializing_if = "String::is_empty")]
     pub run_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub agent_isolation: Option<AgentIsolation>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub capabilities: Vec<String>,
     #[serde(rename = "agentuxVersion", skip_serializing_if = "String::is_empty")]
@@ -204,6 +245,16 @@ pub struct Params {
     pub request_id: String,
     #[serde(skip_serializing_if = "String::is_empty")]
     pub state: String,
+}
+
+/// Effective agent-session isolation reported after a run opens a session.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct AgentIsolation {
+    pub mode: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub network: Option<String>,
+    pub source: String,
 }
 
 fn is_zero(n: &i64) -> bool {
@@ -251,6 +302,39 @@ mod tests {
             json!({"eventId": "e", "sequence": 3}),
         ))
         .unwrap();
+        let sandboxed = message(
+            "run.updated",
+            json!({"eventId": "e", "sequence": 3, "agentIsolation": {"mode": "bubblewrap", "network": "outbound", "source": "command"}}),
+        );
+        validate(&sandboxed).unwrap();
+        let parsed: Params = serde_json::from_value(sandboxed["params"].clone()).unwrap();
+        assert_eq!(parsed.agent_isolation.unwrap().mode, "bubblewrap");
+        validate(&message(
+            "run.failed",
+            json!({"eventId": "e", "sequence": 4, "agentIsolation": {"mode": "none", "source": "default"}}),
+        ))
+        .unwrap();
+        for invalid_isolation in [
+            json!(null),
+            json!({"mode": "bubblewrap", "source": "command"}),
+            json!({"mode": "none", "network": "outbound", "source": "default"}),
+            json!({"mode": "none", "source": "unknown"}),
+        ] {
+            assert!(
+                validate(&message(
+                    "run.updated",
+                    json!({"eventId": "e", "sequence": 3, "agentIsolation": invalid_isolation}),
+                ))
+                .is_err()
+            );
+        }
+        assert!(
+            validate(&message(
+                "run.start",
+                json!({"agentIsolation": {"mode": "none", "source": "default"}}),
+            ))
+            .is_err()
+        );
         assert!(
             validate(&message(
                 "run.updated",
