@@ -46,6 +46,15 @@ pub fn validate(message: &Value) -> Result<(), String> {
     {
         return Err("provider credentials are not protocol payloads".into());
     }
+    if params
+        .get("activity")
+        .is_some_and(contains_forbidden_activity_key)
+    {
+        return Err(
+            "private reasoning, credentials and unrestricted tool input are not activity payloads"
+                .into(),
+        );
+    }
     let Some(kind) = methods::kind(method) else {
         return Err(format!("unsupported AUXP method {method:?}"));
     };
@@ -53,6 +62,12 @@ pub fn validate(message: &Value) -> Result<(), String> {
         if params.get(*name).is_none_or(Value::is_null) {
             return Err(format!("{method} requires {name}"));
         }
+    }
+    if method == "execution.activity" {
+        let activity: crate::activity::Activity =
+            serde_json::from_value(params["activity"].clone())
+                .map_err(|e| format!("invalid execution activity: {e}"))?;
+        activity.validate()?;
     }
     let non_empty_list = |name: &str| {
         params
@@ -112,6 +127,30 @@ pub fn validate(message: &Value) -> Result<(), String> {
         return Err(format!("{method} requires eventId and a positive sequence"));
     }
     Ok(())
+}
+
+fn contains_forbidden_activity_key(value: &Value) -> bool {
+    match value {
+        Value::Object(map) => map.iter().any(|(key, child)| {
+            matches!(
+                key.as_str(),
+                "chainOfThought"
+                    | "chain_of_thought"
+                    | "privateChainOfThought"
+                    | "reasoning"
+                    | "privateReasoning"
+                    | "apiKey"
+                    | "providerToken"
+                    | "credentials"
+                    | "toolInput"
+                    | "rawToolInput"
+                    | "rawInput"
+                    | "toolOutput"
+            ) || contains_forbidden_activity_key(child)
+        }),
+        Value::Array(items) => items.iter().any(contains_forbidden_activity_key),
+        _ => false,
+    }
 }
 
 /// The params of a node's message, as Command reads them. Fields a message

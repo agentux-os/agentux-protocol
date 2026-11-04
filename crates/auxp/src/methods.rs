@@ -46,6 +46,7 @@ pub const EVENTS: &[&str] = &[
     "harness.limits_changed",
     "command.denied",
     "command.completed",
+    "execution.activity",
 ];
 
 /// Who sends a method.
@@ -110,6 +111,7 @@ pub fn required_params(method: &str) -> Option<&'static [&'static str]> {
         "harness.list" => &["commandId"],
         "harness.test" | "limits.clear" => &["commandId", "harness"],
         "preferences.set" => &["commandId", "preferences"],
+        "execution.activity" => &["eventId", "sequence", "activity"],
         event if is_event(event) => &["eventId", "sequence"],
         _ => return None,
     })

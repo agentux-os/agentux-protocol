@@ -9,6 +9,7 @@ const officeSchema = JSON.parse(await readFile(resolve(root, "schemas/v1/office-
 const officeFixtures = JSON.parse(await readFile(resolve(root, "fixtures/v1/office-projection.json"), "utf8"));
 const approvalSchema = JSON.parse(await readFile(resolve(root, "schemas/v1/approval-resolution.schema.json"), "utf8"));
 const approvalFixtures = JSON.parse(await readFile(resolve(root, "fixtures/v1/approval-responses.json"), "utf8"));
+const activitySchema = JSON.parse(await readFile(resolve(root, "schemas/v1/execution-activity.schema.json"), "utf8"));
 
 if (schema.$defs?.baseParams?.properties?.protocolVersion?.const !== "v1") {
   throw new Error("AUXP schema must pin protocolVersion to v1");
@@ -26,8 +27,30 @@ const methodRequired = (method) => schema.oneOf.find((branch) => {
 const accepted = (message) => {
   if (message.jsonrpc !== "2.0" || !methods.has(message.method) || !message.params) return false;
   if ("apiKey" in message.params || "providerToken" in message.params) return false;
+  const forbidden = (value) => {
+    if (Array.isArray(value)) return value.some(forbidden);
+    if (!value || typeof value !== "object") return false;
+    return Object.entries(value).some(([key, child]) =>
+      ["apiKey", "providerToken", "credentials", "chainOfThought", "chain_of_thought", "privateChainOfThought", "reasoning", "privateReasoning", "toolInput", "rawToolInput", "rawInput", "toolOutput"].includes(key) || forbidden(child));
+  };
+  if (message.method === "execution.activity" && forbidden(message.params.activity)) return false;
+  if (message.method === "execution.activity") {
+    const activity = message.params.activity;
+    if (!activity || activity.schemaVersion !== "v1" || !activity.activityId || !activity.missionId || !activity.runId || !activity.agentId || !activity.roleId || typeof activity.summary !== "string" || activity.summary.length > 2000) return false;
+    if (!activitySchema.$defs.activity.properties.type.enum.includes(activity.type)) return false;
+    if (activity.type.startsWith("tool_") && (!activity.toolName || !activity.toolCallId)) return false;
+    if (["delegated", "handoff", "task_assigned"].includes(activity.type) && (!activity.delegationId || !activity.toAgentId || !activity.toRoleId)) return false;
+    if (activity.type === "tool_progress" && (!Number.isInteger(activity.progress) || activity.progress < 0 || activity.progress > 100)) return false;
+    if (activity.type === "artifact_available" && (!Array.isArray(activity.artifacts) || activity.artifacts.length > 16 || activity.artifacts.some((ref) => ref.byteLength > 26214400 || !/^(https:\/\/|artifact:\/\/)/.test(ref.uri ?? "")))) return false;
+  }
   return [...baseRequired, ...methodRequired(message.method)].every((field) => field in message.params);
 };
+
+if (activitySchema.$defs?.activity?.properties?.schemaVersion?.const !== "v1" ||
+    activitySchema.$defs?.activity?.properties?.summary?.maxLength !== 2000 ||
+    activitySchema.$defs?.activity?.properties?.artifacts?.maxItems !== 16) {
+  throw new Error("typed activity schema must pin version and payload bounds");
+}
 
 for (const message of fixtures.valid) {
   if (!accepted(message)) throw new Error(`valid fixture was rejected: ${message.method}`);

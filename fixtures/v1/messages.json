@@ -232,6 +232,141 @@
           ]
         }
       }
+    },
+    {
+      "jsonrpc": "2.0",
+      "method": "execution.activity",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "act-1",
+        "occurredAt": "2026-11-04T12:00:00Z",
+        "eventId": "evt-act-1",
+        "sequence": 20,
+        "activity": {
+          "schemaVersion": "v1",
+          "activityId": "activity-1",
+          "missionId": "mission-01",
+          "runId": "run-01",
+          "agentId": "agent-a",
+          "roleId": "implementer",
+          "taskId": "task-1",
+          "type": "task_created",
+          "taskName": "Implement API",
+          "status": "pending",
+          "summary": "Create the requested endpoint"
+        }
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "method": "execution.activity",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-02",
+        "messageId": "act-2",
+        "occurredAt": "2026-11-04T12:00:01Z",
+        "eventId": "evt-act-2",
+        "sequence": 5,
+        "activity": {
+          "schemaVersion": "v1",
+          "activityId": "activity-2",
+          "missionId": "mission-01",
+          "runId": "run-01",
+          "agentId": "agent-a",
+          "roleId": "implementer",
+          "taskId": "task-1",
+          "attempt": 1,
+          "delegationId": "delegation-1",
+          "type": "delegated",
+          "toAgentId": "agent-b",
+          "toRoleId": "reviewer",
+          "summary": "Delegate review of the implementation"
+        }
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "method": "execution.activity",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "msg-tool-start",
+        "occurredAt": "2026-11-04T12:01:00Z",
+        "eventId": "evt-tool-start",
+        "sequence": 22,
+        "activity": {
+          "schemaVersion": "v1",
+          "activityId": "tool-start",
+          "missionId": "mission-01",
+          "runId": "run-01",
+          "agentId": "agent-a",
+          "roleId": "implementer",
+          "taskId": "task-1",
+          "attempt": 1,
+          "toolCallId": "tool-1",
+          "type": "tool_started",
+          "toolName": "search",
+          "summary": "Searching approved project files"
+        }
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "method": "execution.activity",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "msg-artifact",
+        "occurredAt": "2026-11-04T12:01:00Z",
+        "eventId": "evt-artifact",
+        "sequence": 23,
+        "activity": {
+          "schemaVersion": "v1",
+          "activityId": "artifact",
+          "missionId": "mission-01",
+          "runId": "run-01",
+          "agentId": "agent-a",
+          "roleId": "implementer",
+          "taskId": "task-1",
+          "type": "artifact_available",
+          "summary": "Test report is ready",
+          "artifacts": [
+            {
+              "artifactId": "report-1",
+              "mediaType": "text/plain",
+              "byteLength": 128,
+              "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "uri": "artifact://run-01/report-1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "id": "hello-activity",
+      "method": "node.hello",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "msg-activity-capability",
+        "occurredAt": "2026-10-15T12:00:00Z",
+        "capabilities": [
+          "run.start",
+          "run.snapshot",
+          "execution.activity.v1"
+        ],
+        "agentuxVersion": "0.5.0",
+        "supportedProtocolVersions": [
+          "v1"
+        ]
+      }
     }
   ],
   "invalid": [
@@ -264,6 +399,31 @@
       }
     },
     {
+      "expectedError": "private reasoning in activity",
+      "jsonrpc": "2.0",
+      "method": "execution.activity",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "bad-activity",
+        "occurredAt": "2026-11-04T12:00:00Z",
+        "eventId": "bad-event",
+        "sequence": 21,
+        "activity": {
+          "schemaVersion": "v1",
+          "activityId": "a",
+          "missionId": "m",
+          "runId": "r",
+          "agentId": "agent",
+          "roleId": "worker",
+          "type": "plan_created",
+          "summary": "safe",
+          "reasoning": "private"
+        }
+      }
+    },
+    {
       "expectedError": "provider credential in preferences.set",
       "jsonrpc": "2.0",
       "id": "p",
@@ -278,6 +438,59 @@
         "preferences": {},
         "apiKey": "must-not-be-here"
       }
+    },
+    {
+      "jsonrpc": "2.0",
+      "method": "execution.activity",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "msg-bad-progress",
+        "occurredAt": "2026-11-04T12:01:00Z",
+        "eventId": "evt-bad-progress",
+        "sequence": 24,
+        "activity": {
+          "schemaVersion": "v1",
+          "activityId": "bad-progress",
+          "missionId": "mission-01",
+          "runId": "run-01",
+          "agentId": "agent-a",
+          "roleId": "implementer",
+          "taskId": "task-1",
+          "toolCallId": "tool-2",
+          "type": "tool_progress",
+          "toolName": "search",
+          "progress": 101,
+          "summary": "Progress"
+        }
+      },
+      "expectedError": "tool progress above 100"
+    },
+    {
+      "jsonrpc": "2.0",
+      "method": "execution.activity",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "msg-bad-delegation",
+        "occurredAt": "2026-11-04T12:01:00Z",
+        "eventId": "evt-bad-delegation",
+        "sequence": 25,
+        "activity": {
+          "schemaVersion": "v1",
+          "activityId": "bad-delegation",
+          "missionId": "mission-01",
+          "runId": "run-01",
+          "agentId": "agent-a",
+          "roleId": "implementer",
+          "taskId": "task-1",
+          "type": "handoff",
+          "summary": "Handoff"
+        }
+      },
+      "expectedError": "handoff without delegation target"
     }
   ]
 }

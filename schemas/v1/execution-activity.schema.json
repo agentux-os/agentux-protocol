@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentuxos.org/protocol/v1/execution-activity.schema.json",
+  "title": "AUXP v1 typed execution activity",
+  "$defs": {
+    "artifactRef": {
+      "type": "object", "additionalProperties": false,
+      "required": ["artifactId", "mediaType", "byteLength", "sha256", "uri"],
+      "properties": {
+        "artifactId": {"type": "string", "minLength": 1, "maxLength": 128},
+        "mediaType": {"type": "string", "minLength": 1, "maxLength": 127},
+        "byteLength": {"type": "integer", "minimum": 0, "maximum": 26214400},
+        "sha256": {"type": "string", "pattern": "^[A-Fa-f0-9]{64}$"},
+        "uri": {"type": "string", "maxLength": 2048, "pattern": "^(https://|artifact://)"}
+      }
+    },
+    "status": {"enum": ["pending", "running", "blocked", "completed", "failed", "cancelled"]},
+    "activity": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "activityId", "missionId", "runId", "agentId", "roleId", "type", "summary"],
+      "properties": {
+        "schemaVersion": {"const": "v1"},
+        "activityId": {"type": "string", "minLength": 1, "maxLength": 128},
+        "missionId": {"type": "string", "minLength": 1, "maxLength": 128},
+        "runId": {"type": "string", "minLength": 1, "maxLength": 128},
+        "agentId": {"type": "string", "minLength": 1, "maxLength": 128},
+        "roleId": {"type": "string", "minLength": 1, "maxLength": 128},
+        "sessionId": {"type": "string", "minLength": 1, "maxLength": 128},
+        "taskId": {"type": "string", "minLength": 1, "maxLength": 128},
+        "parentTaskId": {"type": "string", "minLength": 1, "maxLength": 128},
+        "attempt": {"type": "integer", "minimum": 1},
+        "causationId": {"type": "string", "minLength": 1, "maxLength": 128},
+        "delegationId": {"type": "string", "minLength": 1, "maxLength": 128},
+        "toolCallId": {"type": "string", "minLength": 1, "maxLength": 128},
+        "type": {"enum": ["plan_created", "task_created", "task_status_changed", "tool_started", "tool_progress", "tool_completed", "tool_failed", "task_assigned", "delegated", "handoff", "result_returned", "task_completed", "task_failed", "artifact_available"]},
+        "summary": {"type": "string", "maxLength": 2000},
+        "taskName": {"type": "string", "minLength": 1, "maxLength": 256},
+        "status": {"$ref": "#/$defs/status"},
+        "toolName": {"type": "string", "minLength": 1, "maxLength": 128},
+        "progress": {"type": "integer", "minimum": 0, "maximum": 100},
+        "toAgentId": {"type": "string", "minLength": 1, "maxLength": 128},
+        "toRoleId": {"type": "string", "minLength": 1, "maxLength": 128},
+        "fromAgentId": {"type": "string", "minLength": 1, "maxLength": 128},
+        "artifacts": {"type": "array", "maxItems": 16, "items": {"$ref": "#/$defs/artifactRef"}}
+      },
+      "allOf": [
+        {"if": {"properties": {"type": {"enum": ["task_created", "task_status_changed", "task_completed", "task_failed"]}}, "required": ["type"]}, "then": {"required": ["taskId"]}},
+        {"if": {"properties": {"type": {"enum": ["task_created", "task_status_changed"]}}, "required": ["type"]}, "then": {"required": ["status"]}},
+        {"if": {"properties": {"type": {"enum": ["tool_started", "tool_progress", "tool_completed", "tool_failed"]}}, "required": ["type"]}, "then": {"required": ["toolName", "toolCallId"]}},
+        {"if": {"properties": {"type": {"enum": ["delegated", "handoff", "task_assigned"]}}, "required": ["type"]}, "then": {"required": ["delegationId", "toAgentId", "toRoleId"]}},
+        {"if": {"properties": {"type": {"const": "result_returned"}}, "required": ["type"]}, "then": {"required": ["delegationId", "fromAgentId"]}},
+        {"if": {"properties": {"type": {"const": "artifact_available"}}, "required": ["type"]}, "then": {"required": ["artifacts"]}},
+        {"if": {"properties": {"type": {"const": "tool_progress"}}, "required": ["type"]}, "then": {"required": ["progress"]}}
+      ]
+    }
+  }
+}
