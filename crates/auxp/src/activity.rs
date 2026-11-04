@@ -240,10 +240,10 @@ impl Activity {
         if summary.chars().count() > MAX_SUMMARY_CHARS {
             return Err("activity summary exceeds 2000 characters".into());
         }
-        if let ActivityKind::ToolProgress { progress, .. } = &self.kind {
-            if *progress > 100 {
-                return Err("tool progress must be 0..=100".into());
-            }
+        if let ActivityKind::ToolProgress { progress, .. } = &self.kind
+            && *progress > 100
+        {
+            return Err("tool progress must be 0..=100".into());
         }
         let bounded_variant_text: Vec<(&str, &str, usize)> = match &self.kind {
             ActivityKind::TaskCreated { task_name, .. } => vec![("taskName", task_name, 256)],
