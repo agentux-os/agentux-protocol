@@ -15,6 +15,11 @@ const replayFixtures = JSON.parse(await readFile(resolve(root, "fixtures/v1/repl
 if (schema.$defs?.baseParams?.properties?.protocolVersion?.const !== "v1") {
   throw new Error("AUXP schema must pin protocolVersion to v1");
 }
+if (!schema.$defs?.agentIsolation?.required?.includes("mode") ||
+    !schema.oneOf?.some((branch) => branch.allOf?.[1]?.properties?.method?.enum?.includes("run.updated") &&
+      branch.allOf?.[1]?.properties?.params?.properties?.agentIsolation?.$ref === "#/$defs/agentIsolation")) {
+  throw new Error("run event schema must define the typed agentIsolation field");
+}
 
 const methods = new Set(schema.oneOf.flatMap((branch) => {
   const method = branch.allOf[1].properties.method;
@@ -27,6 +32,15 @@ const methodRequired = (method) => schema.oneOf.find((branch) => {
 })?.allOf[1].properties.params.required ?? [];
 const accepted = (message) => {
   if (message.jsonrpc !== "2.0" || !methods.has(message.method) || !message.params) return false;
+  const isolation = message.params.agentIsolation;
+  if (isolation) {
+    if (!["run.updated", "run.completed", "run.failed"].includes(message.method)) return false;
+    if (!schema.$defs.agentIsolation.properties.mode.enum.includes(isolation.mode) ||
+        !schema.$defs.agentIsolation.properties.source.enum.includes(isolation.source)) return false;
+    if (isolation.mode === "bubblewrap" && !schema.$defs.agentIsolation.properties.network.enum.includes(isolation.network)) return false;
+    if (isolation.mode === "none" && "network" in isolation) return false;
+    if (Object.keys(isolation).some((key) => !["mode", "network", "source"].includes(key))) return false;
+  }
   if (message.method === "node.resume" && (!Number.isInteger(message.params.lastAcknowledgedSequence) || message.params.lastAcknowledgedSequence < 0 || !message.params.commandId)) return false;
   if (message.method === "node.events.ack" && (!Number.isInteger(message.params.throughSequence) || message.params.throughSequence < 0 || !message.params.commandId)) return false;
   if ("apiKey" in message.params || "providerToken" in message.params) return false;

@@ -25,6 +25,21 @@
       },
       "additionalProperties": true
     },
+    "agentIsolation": {
+      "description": "Effective agent-session isolation, reported by the node after a run's first agent session opens.",
+      "type": "object",
+      "required": ["mode", "source"],
+      "properties": {
+        "mode": {"enum": ["none", "bubblewrap"]},
+        "network": {"enum": ["outbound", "none"]},
+        "source": {"enum": ["project", "node-policy", "command", "default"]}
+      },
+      "allOf": [
+        {"if": {"properties": {"mode": {"const": "bubblewrap"}}, "required": ["mode"]}, "then": {"required": ["network"]}},
+        {"if": {"properties": {"mode": {"const": "none"}}, "required": ["mode"]}, "then": {"not": {"required": ["network"]}}}
+      ],
+      "additionalProperties": false
+    },
     "resumeResult": {
       "description": "Command invokes node.resume on the node; replayed node notifications are sent to Command on the event channel, never returned in this result.",
       "type": "object",
@@ -80,7 +95,8 @@
     {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "limits.clear"}, "params": {"required": ["commandId", "harness"]}}}]},
     {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "preferences.set"}, "params": {"required": ["commandId", "preferences"]}}}]},
     {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "node.events.ack"}, "params": {"required": ["commandId", "throughSequence"]}}}]},
-    {"allOf": [{"$ref": "#/$defs/notification"}, {"properties": {"method": {"enum": ["node.status_changed", "run.accepted", "run.started", "run.updated", "session.event", "approval.requested", "gate.completed", "run.completed", "run.failed", "artifact.available", "node.alert", "harness.status", "harness.limits_changed", "command.denied", "command.completed"]}, "params": {"required": ["eventId", "sequence"]}}}]},
+    {"allOf": [{"$ref": "#/$defs/notification"}, {"properties": {"method": {"enum": ["node.status_changed", "run.accepted", "run.started", "session.event", "approval.requested", "gate.completed", "artifact.available", "node.alert", "harness.status", "harness.limits_changed", "command.denied", "command.completed"]}, "params": {"required": ["eventId", "sequence"]}}}]},
+    {"allOf": [{"$ref": "#/$defs/notification"}, {"properties": {"method": {"enum": ["run.updated", "run.completed", "run.failed"]}, "params": {"required": ["eventId", "sequence"], "properties": {"agentIsolation": {"$ref": "#/$defs/agentIsolation"}}}}}]},
     {"allOf": [{"$ref": "#/$defs/notification"}, {"properties": {"method": {"const": "execution.activity"}, "params": {"required": ["eventId", "sequence", "activity"], "properties": {"activity": {"$ref": "execution-activity.schema.json#/$defs/activity"}}}}}]}
   ]
 }

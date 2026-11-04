@@ -32,7 +32,38 @@
         "eventId": "evt-01",
         "sequence": 4,
         "runId": "run-01",
-        "state": "testing"
+        "state": "testing",
+        "agentIsolation": {"mode": "bubblewrap", "network": "outbound", "source": "command"}
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "method": "run.completed",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "msg-04",
+        "occurredAt": "2026-10-15T12:05:00Z",
+        "eventId": "evt-02",
+        "sequence": 5,
+        "runId": "run-01",
+        "agentIsolation": {"mode": "bubblewrap", "network": "none", "source": "node-policy"}
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "method": "run.failed",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "msg-05",
+        "occurredAt": "2026-10-15T12:06:00Z",
+        "eventId": "evt-03",
+        "sequence": 6,
+        "runId": "run-02",
+        "agentIsolation": {"mode": "none", "source": "default"}
       }
     },
     {
@@ -654,6 +685,22 @@
     }
   ],
   "invalid": [
+    {
+      "jsonrpc": "2.0",
+      "method": "run.failed",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "msg-bad-isolation",
+        "occurredAt": "2026-10-15T12:06:00Z",
+        "eventId": "evt-bad-isolation",
+        "sequence": 7,
+        "runId": "run-02",
+        "agentIsolation": {"mode": "none", "network": "outbound", "source": "default"}
+      },
+      "expectedError": "host execution cannot declare sandbox network policy"
+    },
     {
       "expectedError": "missing protocolVersion",
       "jsonrpc": "2.0",

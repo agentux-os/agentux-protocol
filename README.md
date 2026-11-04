@@ -46,7 +46,7 @@ The node must not expose the local `agentuxd` Unix socket to the network.
 
 **Connections.** The node opens `wss://<command>/v1/protocol/connect?nodeId=<id>` with `Authorization: Bearer <node token>`. Over it Command sends command requests and the node answers each with a JSON-RPC response (`result`, or `error` with `code` and `message`). Node events may go over the same socket or be POSTed to `/v1/protocol/messages`; Command accepts both. Error codes: `-32601` the node does not implement the method, `-32602` invalid params, `-32010` held for local confirmation, `-32011` denied by the node's policy, `-32012` the local daemon refused or failed.
 
-**`run.start` on a node.** `repository` is the git URL of a project the node has cloned, or clones (into `~/src`). `roles` names the roles the mission expects; optional `agents` (role → harness) and `models` (role → model) choose them, within the node's own agents. `prompt`, optional `title` and `budget.maxUsd` complete it.
+**`run.start` on a node.** `repository` is the git URL of a project the node has cloned, or clones (into `~/src`). `roles` names the roles the mission expects; optional `agents` (role → harness) and `models` (role → model) choose them, within the node's own agents. `prompt`, optional `title` and `budget.maxUsd` complete it. `isolationPolicy: "worktree"` requests an isolated Git worktree for the project; it does not select the agent-session sandbox. The node's local policy remains authoritative for sandbox enforcement, so AUXP v1 does not let `run.start` weaken or independently override that policy.
 
 ## Identity and correlation
 
@@ -115,7 +115,7 @@ The contract is [`schemas/v1/enrollment.schema.json`](schemas/v1/enrollment.sche
 | `limits.clear` | command → node | An operator lifted a usage limit (credits added, plan reset) |
 | `preferences.set` | command → node | Replace the node's agent preferences (order, role agents and models, fallbacks, stall minutes, notifications) |
 
-`run.start` must include a complete execution request: repository, prompt/issue, pipeline reference, roles, budget, isolation policy and requested capabilities. It must not include provider credentials.
+`run.start` must include a complete execution request: repository, prompt/issue, pipeline reference, roles, budget, workspace isolation policy and requested capabilities. It must not include provider credentials. Agent-session sandbox requirements are enforced by the node policy; an organization may require a sandbox for Command-originated runs, but cannot disable a node's requirement.
 
 ## Events
 
@@ -136,6 +136,8 @@ The contract is [`schemas/v1/enrollment.schema.json`](schemas/v1/enrollment.sche
 | `harness.limits_changed` | Usage limits in force changed: every limit still in force |
 | `command.denied` | The node's policy refused a command, or holds it for local confirmation (`reason`) |
 | `command.completed` | A command held for confirmation ran (or was rejected) at the node: `commandId`, `method`, `ok`, `result` or `error`, `confirmedBy` |
+
+After the first agent session opens, `run.updated`, `run.completed` and `run.failed` report the run's effective `agentIsolation` when available. It describes the weakest isolation used by any agent session in that run: `mode` is `none` (host) or `bubblewrap`; sandboxed sessions also report `network` as `outbound` or `none`; `source` identifies `project`, `node-policy`, `command` or `default`. The field can be absent before a session starts. Consumers should treat it as observed execution state, not as a request or a promise that future sessions will be more restricted.
 
 Events are at-least-once. Consumers deduplicate by `eventId`, order by `(nodeId, sequence)`, and persist the last acknowledged sequence. When `node.event_replay.v1` is not negotiated, peers do not invoke `node.resume` or `node.events.ack`; they retain the existing live/outbox delivery behavior and legacy event semantics.
 
