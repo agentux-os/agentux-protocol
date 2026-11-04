@@ -6,6 +6,9 @@
 pub const ENVELOPE: &str = include_str!("../../../schemas/v1/envelope.schema.json");
 /// Every AUXP method and its params.
 pub const MESSAGES: &str = include_str!("../../../schemas/v1/messages.schema.json");
+/// Typed execution activity (`execution.activity.v1` capability).
+pub const EXECUTION_ACTIVITY: &str =
+    include_str!("../../../schemas/v1/execution-activity.schema.json");
 /// Enrollment tokens, redemption and its answers.
 pub const ENROLLMENT: &str = include_str!("../../../schemas/v1/enrollment.schema.json");
 /// The Office projection (`office-projection.v1`).
@@ -24,6 +27,7 @@ mod tests {
         for schema in [
             ENVELOPE,
             MESSAGES,
+            EXECUTION_ACTIVITY,
             ENROLLMENT,
             OFFICE_PROJECTION,
             APPROVAL_RESOLUTION,

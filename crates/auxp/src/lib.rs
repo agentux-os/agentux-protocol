@@ -15,11 +15,13 @@
 //!   hands out with tokens.
 //! - [`schemas`]: the JSON Schemas themselves, for contract tests.
 
+pub mod activity;
 pub mod codes;
 pub mod enrollment;
 pub mod methods;
 pub mod policy;
 pub mod provision;
+pub mod replay;
 pub mod schemas;
 
 mod message;

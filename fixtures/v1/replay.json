@@ -1,0 +1,13 @@
+{
+  "valid": [
+    {"status":"replay","nodeId":"node-a","requestedAfterSequence":4,"oldestAvailableSequence":2,"highWaterSequence":8,"eventsReplayed":4,"snapshotRequired":false},
+    {"status":"cursor_expired","nodeId":"node-a","requestedAfterSequence":1,"oldestAvailableSequence":4,"highWaterSequence":8,"eventsReplayed":0,"snapshotRequired":true},
+    {"status":"replay","nodeId":"node-empty","requestedAfterSequence":0,"oldestAvailableSequence":0,"highWaterSequence":0,"eventsReplayed":0,"snapshotRequired":false}
+  ],
+  "invalid": [
+    {"expectedError":"cursor expired but replay requested","status":"replay","nodeId":"node-a","requestedAfterSequence":1,"oldestAvailableSequence":4,"highWaterSequence":8,"eventsReplayed":7,"snapshotRequired":false},
+    {"expectedError":"expired cursor claims events","status":"cursor_expired","nodeId":"node-a","requestedAfterSequence":1,"oldestAvailableSequence":4,"highWaterSequence":8,"eventsReplayed":1,"snapshotRequired":true},
+    {"expectedError":"high-water precedes request","status":"replay","nodeId":"node-a","requestedAfterSequence":9,"oldestAvailableSequence":1,"highWaterSequence":8,"eventsReplayed":0,"snapshotRequired":false},
+    {"expectedError":"missing snapshot recovery flag","status":"cursor_expired","nodeId":"node-a","requestedAfterSequence":1,"oldestAvailableSequence":4,"highWaterSequence":8,"eventsReplayed":0}
+  ]
+}

@@ -66,8 +66,8 @@ Run-related messages also carry `missionId`, `runId` and, when applicable, `sess
 2. Node sends `node.hello` with identity, protocol versions and capabilities.
 3. Command responds with the accepted version and a connection lease.
 4. Node sends `node.heartbeat` at the negotiated interval.
-5. Node sends events and acknowledges replay cursors.
-6. On reconnect, node sends `node.resume` with the last acknowledged sequence.
+5. Node sends events; Command acknowledges only after durable application.
+6. On reconnect, Command invokes `node.resume` with its last durably applied sequence; the node replays its retained notifications to Command.
 
 ## Enrollment and sessions
 
@@ -91,7 +91,7 @@ The contract is [`schemas/v1/enrollment.schema.json`](schemas/v1/enrollment.sche
 
 **Replay protection.** Tokens are single use and expiring. Commands are idempotent by `commandId`: a repeated command gets the first answer. Events are applied once per `(nodeId, sequence)`. A command carries the issuing server's `commandInstanceId`, so a command captured from one server is refused by nodes of another. Remote connections use TLS; plain HTTP is for the node's own machine only.
 
-**Sessions and reconnect.** The node opens the command connection (`/v1/protocol/connect?nodeId=`, WebSocket, its credential) and keeps it with backoff; a new connection replaces the node's previous one. Events wait in the node's ordered outbox while Command is unreachable and are sent again in order on reconnect; duplicates are ignored by sequence. `node.resume` (asking Command for missed events) is specified and not implemented yet. An accepted run never depends on the connection.
+**Sessions and reconnect.** The node opens the command connection (`/v1/protocol/connect?nodeId=`, WebSocket, its credential) and keeps it with backoff; a new connection replaces the node's previous one. Events wait in the node's ordered outbox while Command is unreachable and are sent again in order on reconnect; duplicates are ignored by `(nodeId, sequence)` and `eventId`. With `node.event_replay.v1` negotiated, Command's `node.resume.lastAcknowledgedSequence` acknowledges through N inclusively and asks the node to resend only sequences greater than N. Replay is strictly ascending and contains every retained sequence through a declared high-water mark. Consumers apply and persist events idempotently, then acknowledge only the highest contiguous sequence durably applied with `node.events.ack`; they never advance across a gap. If the cursor predates retention, the response is `cursor_expired` with `snapshotRequired: true`; the consumer obtains `run.snapshot`, replaces its projection, then resumes from the snapshot's declared sequence. Repeating a resume request is safe and may return duplicates. An accepted run never depends on the connection.
 
 **Versions.** `node.hello` lists `supportedProtocolVersions`, which must contain `v1`. A message with any other `protocolVersion` is refused (400, `unsupported protocol version`), and so is a method a server does not know. A node answers a command it does not implement with `-32601`.
 
@@ -101,7 +101,8 @@ The contract is [`schemas/v1/enrollment.schema.json`](schemas/v1/enrollment.sche
 |---|---|---|
 | `node.hello` | node → command | Authenticate and negotiate capabilities |
 | `node.heartbeat` | node → command | Report liveness and capacity |
-| `node.resume` | node → command | Request missed events after reconnect |
+| `node.resume` | command → node | Ask the node to replay retained event notifications after Command's cursor |
+| `node.events.ack` | command → node | Acknowledge Command's highest contiguous, durably applied event sequence |
 | `run.start` | command → node | Start a technical run for a mission |
 | `run.cancel` | command → node | Cancel a run |
 | `run.pause` | command → node | Pause at the next safe boundary |
@@ -136,7 +137,21 @@ The contract is [`schemas/v1/enrollment.schema.json`](schemas/v1/enrollment.sche
 | `command.denied` | The node's policy refused a command, or holds it for local confirmation (`reason`) |
 | `command.completed` | A command held for confirmation ran (or was rejected) at the node: `commandId`, `method`, `ok`, `result` or `error`, `confirmedBy` |
 
-Events are at-least-once. Consumers deduplicate by `eventId`, order by `(nodeId, sequence)`, and persist the last acknowledged sequence.
+Events are at-least-once. Consumers deduplicate by `eventId`, order by `(nodeId, sequence)`, and persist the last acknowledged sequence. When `node.event_replay.v1` is not negotiated, peers do not invoke `node.resume` or `node.events.ack`; they retain the existing live/outbox delivery behavior and legacy event semantics.
+
+### Typed execution activity (optional v1 capability)
+
+The node offers capabilities in `node.hello.capabilities`; Command returns the accepted subset as `acceptedCapabilities` in its hello result. An extension is active only when Command accepts the node's offer. Older Command servers that omit `acceptedCapabilities` negotiate no optional extension; peers continue with existing v1 methods and event meanings. `execution.activity.v1` gates `execution.activity`; `node.event_replay.v1` gates the replay direction and acknowledgement commands. The contract is [`schemas/v1/execution-activity.schema.json`](schemas/v1/execution-activity.schema.json), referenced by the `execution.activity` notification in [`schemas/v1/messages.schema.json`](schemas/v1/messages.schema.json).
+
+The activity envelope carries `schemaVersion`, stable `activityId`, mission/run, agent/role and optional session, task/parent-task, attempt, causation, delegation and tool-call identifiers. Its discriminated `type` represents plan/task creation and status, tool start/progress/completion/failure, assignment/delegation/handoff/result return, task completion/failure, or artifact availability. Task and delegation IDs remain stable across events; each retry increments `attempt`, each derived event names its `causationId`, and delegation events use one stable `delegationId` across handoff and returned result. A consumer builds the task tree by `(missionId, runId, taskId)` and links delegation edges by `delegationId`; node-local `sequence` supplies total order within one node, while causation links order related events across nodes. There is no implied total order between unrelated node streams.
+
+Summaries are operator-safe, at most 2,000 Unicode characters. Do not emit private chain-of-thought, hidden reasoning, prompts, credentials, environment values, raw tool inputs or outputs, or arbitrary provider payloads. Artifact content stays out of band: references require an HTTPS or `artifact://` URI, SHA-256 digest, media type and byte length; each reference is at most 25 MiB and each event carries at most 16 references. Implementations must enforce authorization and access controls when dereferencing artifacts. Unknown activity fields and variants are rejected; evolve the shape with a new schema version/capability before sending it.
+
+### `node.resume` replay contract
+
+Replay is gated by `node.event_replay.v1`, negotiated in `node.hello.capabilities`, because it assigns the existing `node.resume` method a Command → node direction. Command invokes it with `commandId` and `lastAcknowledgedSequence`; the cursor is inclusive as an acknowledgement (“durably applied through N”) and exclusive as a replay boundary (the node resends only sequence `> N`). The node resends original notifications to Command on the event channel in strict ascending order and returns only replay metadata in the JSON-RPC result. It never returns its own notifications to itself. A repeated `commandId` must replay the same requested range; using a different cursor requires a new `commandId`. `node.events.ack` carries Command's highest contiguous sequence only after durable application; lower or repeated acknowledgements do not move the cursor backward. Both methods are used only when the replay capability is negotiated.
+
+The `node.resume` result shape is `schemas/v1/messages.schema.json#/$defs/resumeResult` and Rust's `auxp::replay::ReplayResult`; it reports `status`, `nodeId`, `requestedAfterSequence`, `oldestAvailableSequence`, `highWaterSequence`, `eventsReplayed`, and `snapshotRequired`. An empty replay is valid when the cursor equals the high-water mark. `cursor_expired` is required when the cursor is before the retained range; it has `snapshotRequired: true` and `eventsReplayed: 0`. On that result, Command invokes `run.snapshot` on the same node; the node returns its current snapshot in that RPC result, and Command replaces its projection before resuming from the snapshot's declared sequence. Duplicate delivery is expected: deduplicate by `(nodeId, sequence)` and verify the same `eventId` maps to the same sequence. A sequence gap or conflicting event identity stops projection advancement; do not silently skip or infer missing events. A sender retains unacknowledged events within its configured retention window.
 
 ## Node policy
 
@@ -145,6 +160,7 @@ Every node decides what Command may do on it, in `/etc/agentux/node-policy.yaml`
 | Method | Default |
 |---|---|
 | `run.snapshot`, `harness.list`, `harness.test` | `allow` |
+| `node.resume`, `node.events.ack` | `allow` |
 | `run.cancel`, `run.pause`, `run.resume`, `request.resolve`, `bus.post`, `limits.clear` | `allow` |
 | `run.start`, `preferences.set` | `confirm` |
 
@@ -176,10 +192,12 @@ The first public contract is `v1`. Additive fields are allowed. Removing or chan
 ## Initial implementation order
 
 1. Read-only `node.hello`, heartbeat and `node.status_changed`.
-2. Run snapshot and event replay.
+2. Run snapshot, durable per-node event cursors, and `node.resume` replay/expiry handling.
 3. `run.start` and terminal run events.
 4. Remote approvals and cancellation.
-5. Pause/resume, bus messages and artifact references.
+5. Pause/resume, bus messages and bounded artifact references.
+6. **agentux-core follow-up:** emit capability-gated typed activity from execution and delegation lifecycles, redact summaries, assign stable IDs/sequences, bound artifact references, retain/replay the event outbox, and acknowledge Command's contiguous durable cursor.
+7. **agentux-command follow-up:** negotiate capability, validate and persist typed events idempotently by `(nodeId, sequence)`/`eventId`, detect gaps/expiry, serve resume replay, acknowledge durable progress, and project mission/task/delegation trees with snapshot recovery.
 
 ## Schemas and fixtures
 
