@@ -380,10 +380,7 @@ fn validate_entry(
     Ok(())
 }
 
-fn state_identity<'a>(
-    kind: ProjectionType,
-    state: &'a serde_json::Map<String, Value>,
-) -> Option<&'a str> {
+fn state_identity(kind: ProjectionType, state: &serde_json::Map<String, Value>) -> Option<&str> {
     let field = match kind {
         ProjectionType::Approval => "approvalId",
         ProjectionType::Artifact => "artifactId",
