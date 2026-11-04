@@ -30,9 +30,9 @@
       "type": "object",
       "required": ["mode", "source"],
       "properties": {
-        "mode": {"enum": ["none", "bubblewrap"]},
-        "network": {"enum": ["outbound", "none"]},
-        "source": {"enum": ["project", "node-policy", "command", "default"]}
+        "mode": {"description": "Weakest effective session mode in the run: host (`none`) is less isolated than `bubblewrap`.", "enum": ["none", "bubblewrap"]},
+        "network": {"description": "For sandboxed runs, the weakest network restriction used by any session: `outbound` is less isolated than `none`.", "enum": ["outbound", "none"]},
+        "source": {"description": "Among sessions that establish the run's weakest mode/network, the source with highest precedence: node-policy, project, command, then default.", "enum": ["project", "node-policy", "command", "default"]}
       },
       "allOf": [
         {"if": {"properties": {"mode": {"const": "bubblewrap"}}, "required": ["mode"]}, "then": {"required": ["network"]}},

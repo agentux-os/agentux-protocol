@@ -32,8 +32,9 @@ const methodRequired = (method) => schema.oneOf.find((branch) => {
 })?.allOf[1].properties.params.required ?? [];
 const accepted = (message) => {
   if (message.jsonrpc !== "2.0" || !methods.has(message.method) || !message.params) return false;
-  const isolation = message.params.agentIsolation;
-  if (isolation) {
+  if ("agentIsolation" in message.params) {
+    const isolation = message.params.agentIsolation;
+    if (!isolation || typeof isolation !== "object" || Array.isArray(isolation)) return false;
     if (!["run.updated", "run.completed", "run.failed"].includes(message.method)) return false;
     if (!schema.$defs.agentIsolation.properties.mode.enum.includes(isolation.mode) ||
         !schema.$defs.agentIsolation.properties.source.enum.includes(isolation.source)) return false;

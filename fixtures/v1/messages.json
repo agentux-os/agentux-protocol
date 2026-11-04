@@ -692,6 +692,22 @@
         "protocolVersion": "v1",
         "organizationId": "org-demo",
         "nodeId": "node-01",
+        "messageId": "msg-null-isolation",
+        "occurredAt": "2026-10-15T12:06:00Z",
+        "eventId": "evt-null-isolation",
+        "sequence": 8,
+        "runId": "run-02",
+        "agentIsolation": null
+      },
+      "expectedError": "agentIsolation cannot be null"
+    },
+    {
+      "jsonrpc": "2.0",
+      "method": "run.failed",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
         "messageId": "msg-bad-isolation",
         "occurredAt": "2026-10-15T12:06:00Z",
         "eventId": "evt-bad-isolation",
