@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentuxos.org/protocol/v1/node-snapshot.schema.json",
+  "title": "AUXP v1 atomic node snapshot checkpoint",
+  "$defs": {
+    "failure": {
+      "description": "Value carried in JSON-RPC error.data when a checkpoint cannot safely be completed or acknowledged. No failure advances the receiver or sender cursor.",
+      "type": "object",
+      "required": ["code", "checkpointId", "retryable"],
+      "properties": {
+        "code": {"enum": ["snapshot_expired", "snapshot_too_large", "snapshot_entry_too_large", "checkpoint_conflict", "stale_checkpoint", "checkpoint_incomplete", "checkpoint_scope_mismatch", "checkpoint_sequence_mismatch"]},
+        "checkpointId": {"type": "string", "minLength": 1, "maxLength": 128},
+        "retryable": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "run": {
+      "type": "object",
+      "required": ["runId", "missionId", "status", "currentState"],
+      "properties": {
+        "runId": {"type": "string", "minLength": 1, "maxLength": 128},
+        "missionId": {"type": "string", "minLength": 1, "maxLength": 128},
+        "status": {"enum": ["accepted", "running", "paused", "completed", "failed", "cancelled"]},
+        "currentState": {"description": "Complete authoritative present state for this run as defined by the negotiated node snapshot schemaVersion. It is not an event or a history of transitions.", "type": "object"}
+      },
+      "additionalProperties": false
+    },
+    "entry": {
+      "oneOf": [
+        {"type": "object", "required": ["kind", "entryId", "run"], "properties": {"kind": {"const": "run"}, "entryId": {"type": "string", "minLength": 1, "maxLength": 128}, "run": {"$ref": "#/$defs/run"}}, "additionalProperties": false},
+        {"type": "object", "required": ["kind", "entryId", "missionId", "removedAt"], "properties": {"kind": {"const": "removed"}, "entryId": {"type": "string", "minLength": 1, "maxLength": 128}, "missionId": {"type": "string", "minLength": 1, "maxLength": 128}, "removedAt": {"type": "string", "format": "date-time"}}, "additionalProperties": false}
+      ]
+    },
+    "page": {
+      "description": "Every page belongs to one immutable, node-wide snapshot captured atomically at highWaterSequence. The ordered entries across all pages are the complete run inventory at that point.",
+      "type": "object",
+      "required": ["schemaVersion", "checkpointId", "snapshotId", "organizationId", "nodeId", "requestedAfterSequence", "highWaterSequence", "pageIndex", "pageCount", "entryCount", "entries"],
+      "properties": {
+        "schemaVersion": {"const": "v1"},
+        "checkpointId": {"type": "string", "minLength": 1, "maxLength": 128},
+        "snapshotId": {"type": "string", "minLength": 1, "maxLength": 128},
+        "organizationId": {"type": "string", "minLength": 1, "maxLength": 128},
+        "nodeId": {"type": "string", "minLength": 1, "maxLength": 128},
+        "requestedAfterSequence": {"type": "integer", "minimum": 0, "maximum": 9223372036854775807},
+        "highWaterSequence": {"type": "integer", "minimum": 0, "maximum": 9223372036854775807},
+        "pageIndex": {"type": "integer", "minimum": 0, "maximum": 9999},
+        "pageCount": {"type": "integer", "minimum": 1, "maximum": 10000},
+        "entryCount": {"type": "integer", "minimum": 0, "maximum": 10000},
+        "entries": {"type": "array", "maxItems": 100, "items": {"$ref": "#/$defs/entry"}},
+        "nextPageToken": {"type": "string", "minLength": 1, "maxLength": 2048}
+      },
+      "allOf": [
+        {"description": "pageIndex is zero based and pageCount is constant for the snapshot. Exactly the final page omits nextPageToken; every prior page carries it. requestedAfterSequence must not exceed highWaterSequence."},
+        {"properties": {"highWaterSequence": {"minimum": 0}}},
+        {"if": {"properties": {"pageIndex": {"const": 0}}, "required": ["pageIndex"]}, "then": {"properties": {"pageCount": {"minimum": 1}}}},
+        {"if": {"properties": {"pageCount": {"const": 1}}, "required": ["pageCount"]}, "then": {"properties": {"pageIndex": {"const": 0}}, "not": {"required": ["nextPageToken"]}}}
+      ],
+      "additionalProperties": false
+    }
+  }
+}

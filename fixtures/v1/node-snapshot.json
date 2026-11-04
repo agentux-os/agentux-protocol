@@ -1,0 +1,67 @@
+{
+  "requests": {
+    "valid": [
+      {"jsonrpc":"2.0","id":"snap-page-0","method":"node.snapshot","params":{"protocolVersion":"v1","organizationId":"org-a","nodeId":"node-a","messageId":"msg-snap-0","occurredAt":"2026-11-04T22:00:00Z","commandId":"cmd-page-0","checkpointId":"checkpoint-7","requestedAfterSequence":40,"pageSize":100}},
+      {"jsonrpc":"2.0","id":"snap-page-1","method":"node.snapshot","params":{"protocolVersion":"v1","organizationId":"org-a","nodeId":"node-a","messageId":"msg-snap-1","occurredAt":"2026-11-04T22:00:01Z","commandId":"cmd-page-1","checkpointId":"checkpoint-7","requestedAfterSequence":40,"pageSize":100,"pageToken":"opaque-page-1"}}
+    ],
+    "invalid": [
+      {"expectedError":"missing checkpoint identity","jsonrpc":"2.0","id":"bad-snap","method":"node.snapshot","params":{"protocolVersion":"v1","organizationId":"org-a","nodeId":"node-a","messageId":"msg-bad-snap","occurredAt":"2026-11-04T22:00:00Z","commandId":"cmd-bad","requestedAfterSequence":40,"pageSize":100}},
+      {"expectedError":"page size exceeds limit","jsonrpc":"2.0","id":"bad-size","method":"node.snapshot","params":{"protocolVersion":"v1","organizationId":"org-a","nodeId":"node-a","messageId":"msg-bad-size","occurredAt":"2026-11-04T22:00:00Z","commandId":"cmd-bad-size","checkpointId":"checkpoint-7","requestedAfterSequence":40,"pageSize":101}}
+    ]
+  },
+  "pages": {
+    "valid": [
+      [
+        {"schemaVersion":"v1","checkpointId":"checkpoint-7","snapshotId":"snapshot-7","organizationId":"org-a","nodeId":"node-a","requestedAfterSequence":40,"highWaterSequence":57,"pageIndex":0,"pageCount":2,"entryCount":3,"entries":[{"kind":"run","entryId":"run-001","run":{"runId":"run-001","missionId":"mission-a","status":"running","currentState":{"step":"compile","attempt":2}}},{"kind":"run","entryId":"run-002","run":{"runId":"run-002","missionId":"mission-b","status":"accepted","currentState":{"step":"queued"}}}],"nextPageToken":"opaque-page-1"},
+        {"schemaVersion":"v1","checkpointId":"checkpoint-7","snapshotId":"snapshot-7","organizationId":"org-a","nodeId":"node-a","requestedAfterSequence":40,"highWaterSequence":57,"pageIndex":1,"pageCount":2,"entryCount":3,"entries":[{"kind":"removed","entryId":"run-003","missionId":"mission-c","removedAt":"2026-11-04T21:59:00Z"}]}
+      ],
+      [
+        {"schemaVersion":"v1","checkpointId":"checkpoint-empty","snapshotId":"snapshot-empty","organizationId":"org-a","nodeId":"node-empty","requestedAfterSequence":0,"highWaterSequence":0,"pageIndex":0,"pageCount":1,"entryCount":0,"entries":[]}
+      ]
+    ],
+    "invalid": [
+      {"expectedError":"checkpoint high-water precedes requested cursor","pages":[{"schemaVersion":"v1","checkpointId":"c","snapshotId":"s","organizationId":"org-a","nodeId":"node-a","requestedAfterSequence":9,"highWaterSequence":8,"pageIndex":0,"pageCount":1,"entryCount":0,"entries":[]}]},
+      {"expectedError":"inconsistent high-water across pages","pages":[{"schemaVersion":"v1","checkpointId":"c","snapshotId":"s","organizationId":"org-a","nodeId":"node-a","requestedAfterSequence":4,"highWaterSequence":8,"pageIndex":0,"pageCount":2,"entryCount":0,"entries":[],"nextPageToken":"p"},{"schemaVersion":"v1","checkpointId":"c","snapshotId":"s","organizationId":"org-a","nodeId":"node-a","requestedAfterSequence":4,"highWaterSequence":9,"pageIndex":1,"pageCount":2,"entryCount":0,"entries":[]}]},
+      {"expectedError":"missing terminal page","pages":[{"schemaVersion":"v1","checkpointId":"c","snapshotId":"s","organizationId":"org-a","nodeId":"node-a","requestedAfterSequence":4,"highWaterSequence":8,"pageIndex":0,"pageCount":2,"entryCount":0,"entries":[]}]},
+      {"expectedError":"entry count does not match manifest","pages":[{"schemaVersion":"v1","checkpointId":"c","snapshotId":"s","organizationId":"org-a","nodeId":"node-a","requestedAfterSequence":4,"highWaterSequence":8,"pageIndex":0,"pageCount":1,"entryCount":1,"entries":[]}]},
+      {"expectedError":"duplicate or unordered entries","pages":[{"schemaVersion":"v1","checkpointId":"c","snapshotId":"s","organizationId":"org-a","nodeId":"node-a","requestedAfterSequence":4,"highWaterSequence":8,"pageIndex":0,"pageCount":1,"entryCount":2,"entries":[{"kind":"removed","entryId":"run-z","missionId":"m","removedAt":"2026-11-04T21:59:00Z"},{"kind":"removed","entryId":"run-z","missionId":"m","removedAt":"2026-11-04T21:59:00Z"}]}]}
+    ]
+  },
+  "checkpointAck": {
+    "valid": {"checkpointId":"checkpoint-7","throughSequence":57,"requestedAfterSequence":40,"allPagesServed":true,"scopeMatches":true},
+    "invalid": [
+      {"expectedError":"ACK advances beyond checkpoint high-water","checkpointId":"checkpoint-7","throughSequence":58,"highWaterSequence":57,"requestedAfterSequence":40,"allPagesServed":true,"scopeMatches":true},
+      {"expectedError":"ACK before all pages were served","checkpointId":"checkpoint-7","throughSequence":57,"highWaterSequence":57,"requestedAfterSequence":40,"allPagesServed":false,"scopeMatches":true},
+      {"expectedError":"checkpoint scope mismatch","checkpointId":"checkpoint-7","throughSequence":57,"highWaterSequence":57,"requestedAfterSequence":40,"allPagesServed":true,"scopeMatches":false}
+    ]
+  },
+  "retry": {"sameCheckpointId":"checkpoint-7","sameRequestCommandId":"cmd-page-0","samePageToken":"opaque-page-1","mustReturnSameSnapshotId":"snapshot-7","mustReturnSamePageContent":true,"changedStartingCursorRequiresNewCheckpointId":true,"snapshotExpirySeconds":900},
+  "negotiation": {
+    "nodeOffer": ["node.event_replay.v1", "node.snapshot_checkpoint.v1"],
+    "commandAccepted": ["node.event_replay.v1", "node.snapshot_checkpoint.v1"],
+    "legacyNodeOffer": ["node.event_replay.v1"],
+    "legacyCommandAccepted": ["node.event_replay.v1"],
+    "snapshotEnabled": true,
+    "legacySnapshotEnabled": false
+  },
+  "concurrentEvents": {
+    "valid": {"eventBeforeCapture":56,"highWaterSequence":57,"stateReflectsThroughSequence":57,"eventAfterCapture":58,"firstReplaySequence":58},
+    "invalid": [
+      {"expectedError":"snapshot omits event at or below high-water","highWaterSequence":57,"stateReflectsThroughSequence":56,"firstReplaySequence":58},
+      {"expectedError":"replay starts after an uncovered sequence","highWaterSequence":57,"stateReflectsThroughSequence":57,"firstReplaySequence":59}
+    ]
+  },
+  "failures": {
+    "valid": [
+      {"code":"snapshot_expired","checkpointId":"checkpoint-old","retryable":true},
+      {"code":"checkpoint_incomplete","checkpointId":"checkpoint-7","retryable":true},
+      {"code":"checkpoint_scope_mismatch","checkpointId":"checkpoint-7","retryable":false},
+      {"code":"stale_checkpoint","checkpointId":"checkpoint-stale","retryable":true}
+    ],
+    "invalid": [
+      {"expectedError":"failure omits retry policy","code":"snapshot_expired","checkpointId":"checkpoint-old"},
+      {"expectedError":"unknown failure code","code":"unknown","checkpointId":"checkpoint-old","retryable":false}
+    ]
+  },
+  "limits": {"maxEntriesPerPage":100,"maxPageBytes":1048576,"maxEntries":10000,"maxSnapshotBytes":67108864,"snapshotExpirySeconds":900}
+}
