@@ -360,12 +360,296 @@
         "capabilities": [
           "run.start",
           "run.snapshot",
-          "execution.activity.v1"
+          "execution.activity.v1",
+          "node.event_replay.v1"
         ],
         "agentuxVersion": "0.5.0",
         "supportedProtocolVersions": [
           "v1"
         ]
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "method": "execution.activity",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "msg-plan",
+        "occurredAt": "2026-11-04T12:02:00Z",
+        "eventId": "evt-plan",
+        "sequence": 30,
+        "activity": {
+          "schemaVersion": "v1",
+          "activityId": "plan",
+          "missionId": "mission-01",
+          "runId": "run-01",
+          "agentId": "agent-a",
+          "roleId": "implementer",
+          "type": "plan_created",
+          "summary": "Three implementation steps are planned"
+        }
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "method": "execution.activity",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "msg-task-status",
+        "occurredAt": "2026-11-04T12:02:00Z",
+        "eventId": "evt-task-status",
+        "sequence": 31,
+        "activity": {
+          "schemaVersion": "v1",
+          "activityId": "task-status",
+          "missionId": "mission-01",
+          "runId": "run-01",
+          "agentId": "agent-a",
+          "roleId": "implementer",
+          "taskId": "task-1",
+          "summary": "Safe lifecycle update",
+          "type": "task_status_changed",
+          "status": "running"
+        }
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "method": "execution.activity",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "msg-tool-progress",
+        "occurredAt": "2026-11-04T12:02:00Z",
+        "eventId": "evt-tool-progress",
+        "sequence": 32,
+        "activity": {
+          "schemaVersion": "v1",
+          "activityId": "tool-progress",
+          "missionId": "mission-01",
+          "runId": "run-01",
+          "agentId": "agent-a",
+          "roleId": "implementer",
+          "taskId": "task-1",
+          "summary": "Safe lifecycle update",
+          "type": "tool_progress",
+          "toolCallId": "tool-1",
+          "toolName": "tests",
+          "progress": 50
+        }
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "method": "execution.activity",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "msg-tool-completed",
+        "occurredAt": "2026-11-04T12:02:00Z",
+        "eventId": "evt-tool-completed",
+        "sequence": 33,
+        "activity": {
+          "schemaVersion": "v1",
+          "activityId": "tool-completed",
+          "missionId": "mission-01",
+          "runId": "run-01",
+          "agentId": "agent-a",
+          "roleId": "implementer",
+          "taskId": "task-1",
+          "summary": "Safe lifecycle update",
+          "type": "tool_completed",
+          "toolCallId": "tool-1",
+          "toolName": "tests"
+        }
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "method": "execution.activity",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "msg-tool-failed",
+        "occurredAt": "2026-11-04T12:02:00Z",
+        "eventId": "evt-tool-failed",
+        "sequence": 34,
+        "activity": {
+          "schemaVersion": "v1",
+          "activityId": "tool-failed",
+          "missionId": "mission-01",
+          "runId": "run-01",
+          "agentId": "agent-a",
+          "roleId": "implementer",
+          "taskId": "task-1",
+          "summary": "Safe lifecycle update",
+          "type": "tool_failed",
+          "toolCallId": "tool-2",
+          "toolName": "formatter"
+        }
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "method": "execution.activity",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "msg-assigned",
+        "occurredAt": "2026-11-04T12:02:00Z",
+        "eventId": "evt-assigned",
+        "sequence": 35,
+        "activity": {
+          "schemaVersion": "v1",
+          "activityId": "assigned",
+          "missionId": "mission-01",
+          "runId": "run-01",
+          "agentId": "agent-a",
+          "roleId": "implementer",
+          "taskId": "task-1",
+          "summary": "Safe lifecycle update",
+          "type": "task_assigned",
+          "delegationId": "delegation-2",
+          "toAgentId": "agent-b",
+          "toRoleId": "reviewer"
+        }
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "method": "execution.activity",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "msg-handoff",
+        "occurredAt": "2026-11-04T12:02:00Z",
+        "eventId": "evt-handoff",
+        "sequence": 36,
+        "activity": {
+          "schemaVersion": "v1",
+          "activityId": "handoff",
+          "missionId": "mission-01",
+          "runId": "run-01",
+          "agentId": "agent-a",
+          "roleId": "implementer",
+          "taskId": "task-1",
+          "summary": "Safe lifecycle update",
+          "type": "handoff",
+          "delegationId": "delegation-2",
+          "toAgentId": "agent-b",
+          "toRoleId": "reviewer"
+        }
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "method": "execution.activity",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "msg-returned",
+        "occurredAt": "2026-11-04T12:02:00Z",
+        "eventId": "evt-returned",
+        "sequence": 37,
+        "activity": {
+          "schemaVersion": "v1",
+          "activityId": "returned",
+          "missionId": "mission-01",
+          "runId": "run-01",
+          "agentId": "agent-a",
+          "roleId": "implementer",
+          "taskId": "task-1",
+          "summary": "Safe lifecycle update",
+          "type": "result_returned",
+          "delegationId": "delegation-2",
+          "fromAgentId": "agent-b"
+        }
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "method": "execution.activity",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "msg-task-done",
+        "occurredAt": "2026-11-04T12:02:00Z",
+        "eventId": "evt-task-done",
+        "sequence": 38,
+        "activity": {
+          "schemaVersion": "v1",
+          "activityId": "task-done",
+          "missionId": "mission-01",
+          "runId": "run-01",
+          "agentId": "agent-a",
+          "roleId": "implementer",
+          "taskId": "task-1",
+          "summary": "Safe lifecycle update",
+          "type": "task_completed"
+        }
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "method": "execution.activity",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "msg-task-error",
+        "occurredAt": "2026-11-04T12:02:00Z",
+        "eventId": "evt-task-error",
+        "sequence": 39,
+        "activity": {
+          "schemaVersion": "v1",
+          "activityId": "task-error",
+          "missionId": "mission-01",
+          "runId": "run-01",
+          "agentId": "agent-a",
+          "roleId": "implementer",
+          "taskId": "task-1",
+          "summary": "Safe lifecycle update",
+          "type": "task_failed"
+        }
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "id": "resume-1",
+      "method": "node.resume",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "resume-msg",
+        "occurredAt": "2026-11-04T12:03:00Z",
+        "commandId": "cmd-resume-1",
+        "lastAcknowledgedSequence": 19
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "id": "ack-1",
+      "method": "node.events.ack",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "ack-msg",
+        "occurredAt": "2026-11-04T12:03:01Z",
+        "commandId": "cmd-ack-1",
+        "throughSequence": 39
       }
     }
   ],
@@ -491,6 +775,32 @@
         }
       },
       "expectedError": "handoff without delegation target"
+    },
+    {
+      "jsonrpc": "2.0",
+      "method": "execution.activity",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "msg-task-no-name",
+        "occurredAt": "2026-11-04T12:02:00Z",
+        "eventId": "evt-task-no-name",
+        "sequence": 40,
+        "activity": {
+          "schemaVersion": "v1",
+          "activityId": "task-no-name",
+          "missionId": "mission-01",
+          "runId": "run-01",
+          "agentId": "agent-a",
+          "roleId": "implementer",
+          "taskId": "t2",
+          "type": "task_created",
+          "status": "pending",
+          "summary": "Missing stable task label"
+        }
+      },
+      "expectedError": "task_created without taskName"
     }
   ]
 }

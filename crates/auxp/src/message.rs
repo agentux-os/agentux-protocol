@@ -109,6 +109,15 @@ pub fn validate(message: &Value) -> Result<(), String> {
                 return Err("lastAcknowledgedSequence must be a non-negative integer".into());
             }
         }
+        "node.events.ack" => {
+            if params
+                .get("throughSequence")
+                .and_then(Value::as_i64)
+                .is_none_or(|s| s < 0)
+            {
+                return Err("throughSequence must be a non-negative integer".into());
+            }
+        }
         "harness.status" if params.get("harnesses").is_none_or(Value::is_null) => {
             return Err("harness.status requires harnesses".into());
         }
@@ -169,6 +178,10 @@ pub struct Params {
     pub event_id: String,
     #[serde(skip_serializing_if = "is_zero")]
     pub sequence: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_acknowledged_sequence: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub through_sequence: Option<i64>,
     #[serde(skip_serializing_if = "String::is_empty")]
     pub run_id: String,
     #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -294,5 +307,28 @@ mod tests {
         assert_eq!(params.node_id, "node-1");
         assert_eq!(params.sequence, 2);
         assert_eq!(params.limits, Some(json!([{"kind": "weekly"}])));
+    }
+
+    #[test]
+    fn resume_and_ack_cursors_are_read_as_signed_protocol_sequences() {
+        let resume = message(
+            "node.resume",
+            json!({"commandId":"resume-1","lastAcknowledgedSequence":12}),
+        );
+        validate(&resume).unwrap();
+        let params: Params = serde_json::from_value(resume["params"].clone()).unwrap();
+        assert_eq!(params.last_acknowledged_sequence, Some(12));
+        let ack = message(
+            "node.events.ack",
+            json!({"commandId":"ack-1","throughSequence":12}),
+        );
+        validate(&ack).unwrap();
+        let params: Params = serde_json::from_value(ack["params"].clone()).unwrap();
+        assert_eq!(params.through_sequence, Some(12));
+        let invalid = message(
+            "node.resume",
+            json!({"commandId":"resume-2","lastAcknowledgedSequence":-1}),
+        );
+        assert!(validate(&invalid).is_err());
     }
 }

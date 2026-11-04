@@ -31,6 +31,51 @@ fn valid_fixtures_pass_and_invalid_ones_fail() {
 }
 
 #[test]
+fn replay_result_fixtures_enforce_cursor_recovery_invariants() {
+    use auxp::replay::ReplayResult;
+    let fixtures = read("fixtures/v1/replay.json");
+    for result in fixtures["valid"].as_array().unwrap() {
+        let parsed: ReplayResult = serde_json::from_value(result.clone()).unwrap();
+        parsed
+            .validate()
+            .unwrap_or_else(|e| panic!("valid replay result refused: {e}"));
+    }
+    for result in fixtures["invalid"].as_array().unwrap() {
+        let mut value = result.clone();
+        value.as_object_mut().unwrap().remove("expectedError");
+        let parsed = serde_json::from_value::<ReplayResult>(value);
+        assert!(
+            parsed.is_err() || parsed.unwrap().validate().is_err(),
+            "invalid replay fixture accepted: {}",
+            result["expectedError"]
+        );
+    }
+}
+
+#[test]
+fn every_activity_variant_has_a_valid_fixture_and_a_rust_type() {
+    let schema = read("schemas/v1/execution-activity.schema.json");
+    let declared: BTreeSet<&str> = schema["$defs"]["activity"]["properties"]["type"]["enum"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|value| value.as_str().unwrap())
+        .collect();
+    let fixtures = read("fixtures/v1/messages.json");
+    let covered: BTreeSet<&str> = fixtures["valid"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|message| message["method"] == "execution.activity")
+        .map(|message| message["params"]["activity"]["type"].as_str().unwrap())
+        .collect();
+    assert_eq!(
+        covered, declared,
+        "each declared variant must have a valid, Rust-validated fixture"
+    );
+}
+
+#[test]
 fn the_schema_and_the_crate_list_the_same_methods_and_params() {
     let schema = read("schemas/v1/messages.schema.json");
     assert_eq!(

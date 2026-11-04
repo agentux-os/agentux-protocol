@@ -20,6 +20,8 @@ pub enum Decision {
 /// the node. Commands not listed are denied.
 pub const DEFAULTS: &[(&str, Decision)] = &[
     ("run.snapshot", Decision::Allow),
+    ("node.resume", Decision::Allow),
+    ("node.events.ack", Decision::Allow),
     ("harness.list", Decision::Allow),
     ("harness.test", Decision::Allow),
     ("run.cancel", Decision::Allow),

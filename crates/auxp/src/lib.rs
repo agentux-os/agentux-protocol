@@ -21,6 +21,7 @@ pub mod enrollment;
 pub mod methods;
 pub mod policy;
 pub mod provision;
+pub mod replay;
 pub mod schemas;
 
 mod message;

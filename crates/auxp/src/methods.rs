@@ -11,7 +11,7 @@ pub const BASE_PARAMS: &[&str] = &[
 ];
 
 /// Node → Command requests.
-pub const NODE: &[&str] = &["node.hello", "node.heartbeat", "node.resume"];
+pub const NODE: &[&str] = &["node.hello", "node.heartbeat"];
 
 /// Command → node commands.
 pub const COMMANDS: &[&str] = &[
@@ -26,6 +26,8 @@ pub const COMMANDS: &[&str] = &[
     "harness.test",
     "limits.clear",
     "preferences.set",
+    "node.resume",
+    "node.events.ack",
 ];
 
 /// Node → Command events: notifications with an `eventId` and a per-node
@@ -92,7 +94,8 @@ pub fn required_params(method: &str) -> Option<&'static [&'static str]> {
             "supportedProtocolVersions",
         ],
         "node.heartbeat" => &["status", "capacity"],
-        "node.resume" => &["lastAcknowledgedSequence"],
+        "node.resume" => &["commandId", "lastAcknowledgedSequence"],
+        "node.events.ack" => &["commandId", "throughSequence"],
         "run.start" => &[
             "commandId",
             "missionId",
@@ -132,5 +135,7 @@ mod tests {
         all.dedup();
         assert_eq!(all.len(), total, "no method is listed twice");
         assert_eq!(kind("shell.exec"), None);
+        assert_eq!(kind("node.resume"), Some(Kind::Command));
+        assert_eq!(kind("node.events.ack"), Some(Kind::Command));
     }
 }

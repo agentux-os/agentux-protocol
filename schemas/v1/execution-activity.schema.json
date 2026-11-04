@@ -28,7 +28,7 @@
         "sessionId": {"type": "string", "minLength": 1, "maxLength": 128},
         "taskId": {"type": "string", "minLength": 1, "maxLength": 128},
         "parentTaskId": {"type": "string", "minLength": 1, "maxLength": 128},
-        "attempt": {"type": "integer", "minimum": 1},
+        "attempt": {"type": "integer", "minimum": 1, "maximum": 4294967295},
         "causationId": {"type": "string", "minLength": 1, "maxLength": 128},
         "delegationId": {"type": "string", "minLength": 1, "maxLength": 128},
         "toolCallId": {"type": "string", "minLength": 1, "maxLength": 128},
@@ -45,12 +45,22 @@
       },
       "allOf": [
         {"if": {"properties": {"type": {"enum": ["task_created", "task_status_changed", "task_completed", "task_failed"]}}, "required": ["type"]}, "then": {"required": ["taskId"]}},
-        {"if": {"properties": {"type": {"enum": ["task_created", "task_status_changed"]}}, "required": ["type"]}, "then": {"required": ["status"]}},
+        {"if": {"properties": {"type": {"const": "task_created"}}, "required": ["type"]}, "then": {"required": ["taskName", "status"]}},
+        {"if": {"properties": {"type": {"const": "task_status_changed"}}, "required": ["type"]}, "then": {"required": ["status"]}},
         {"if": {"properties": {"type": {"enum": ["tool_started", "tool_progress", "tool_completed", "tool_failed"]}}, "required": ["type"]}, "then": {"required": ["toolName", "toolCallId"]}},
         {"if": {"properties": {"type": {"enum": ["delegated", "handoff", "task_assigned"]}}, "required": ["type"]}, "then": {"required": ["delegationId", "toAgentId", "toRoleId"]}},
         {"if": {"properties": {"type": {"const": "result_returned"}}, "required": ["type"]}, "then": {"required": ["delegationId", "fromAgentId"]}},
         {"if": {"properties": {"type": {"const": "artifact_available"}}, "required": ["type"]}, "then": {"required": ["artifacts"]}},
-        {"if": {"properties": {"type": {"const": "tool_progress"}}, "required": ["type"]}, "then": {"required": ["progress"]}}
+        {"if": {"properties": {"type": {"const": "tool_progress"}}, "required": ["type"]}, "then": {"required": ["progress"]}},
+        {"if": {"properties": {"type": {"const": "plan_created"}}, "required": ["type"]}, "then": {"not": {"anyOf": [{"required":["taskName"]},{"required":["status"]},{"required":["toolName"]},{"required":["progress"]},{"required":["toAgentId"]},{"required":["toRoleId"]},{"required":["fromAgentId"]},{"required":["artifacts"]}]}}},
+        {"if": {"properties": {"type": {"const": "task_created"}}, "required": ["type"]}, "then": {"not": {"anyOf": [{"required":["toolName"]},{"required":["progress"]},{"required":["toAgentId"]},{"required":["toRoleId"]},{"required":["fromAgentId"]},{"required":["artifacts"]}]}}},
+        {"if": {"properties": {"type": {"const": "task_status_changed"}}, "required": ["type"]}, "then": {"not": {"anyOf": [{"required":["taskName"]},{"required":["toolName"]},{"required":["progress"]},{"required":["toAgentId"]},{"required":["toRoleId"]},{"required":["fromAgentId"]},{"required":["artifacts"]}]}}},
+        {"if": {"properties": {"type": {"const": "tool_progress"}}, "required": ["type"]}, "then": {"not": {"anyOf": [{"required":["taskName"]},{"required":["status"]},{"required":["toAgentId"]},{"required":["toRoleId"]},{"required":["fromAgentId"]},{"required":["artifacts"]}]}}},
+        {"if": {"properties": {"type": {"enum": ["tool_started", "tool_completed", "tool_failed"]}}, "required": ["type"]}, "then": {"not": {"anyOf": [{"required":["taskName"]},{"required":["status"]},{"required":["progress"]},{"required":["toAgentId"]},{"required":["toRoleId"]},{"required":["fromAgentId"]},{"required":["artifacts"]}]}}},
+        {"if": {"properties": {"type": {"enum": ["task_assigned", "delegated", "handoff"]}}, "required": ["type"]}, "then": {"not": {"anyOf": [{"required":["taskName"]},{"required":["status"]},{"required":["toolName"]},{"required":["progress"]},{"required":["fromAgentId"]},{"required":["artifacts"]}]}}},
+        {"if": {"properties": {"type": {"const": "result_returned"}}, "required": ["type"]}, "then": {"not": {"anyOf": [{"required":["taskName"]},{"required":["status"]},{"required":["toolName"]},{"required":["progress"]},{"required":["toAgentId"]},{"required":["toRoleId"]},{"required":["artifacts"]}]}}},
+        {"if": {"properties": {"type": {"enum": ["task_completed", "task_failed"]}}, "required": ["type"]}, "then": {"not": {"anyOf": [{"required":["taskName"]},{"required":["status"]},{"required":["toolName"]},{"required":["progress"]},{"required":["toAgentId"]},{"required":["toRoleId"]},{"required":["fromAgentId"]},{"required":["artifacts"]}]}}},
+        {"if": {"properties": {"type": {"const": "artifact_available"}}, "required": ["type"]}, "then": {"not": {"anyOf": [{"required":["taskName"]},{"required":["status"]},{"required":["toolName"]},{"required":["progress"]},{"required":["toAgentId"]},{"required":["toRoleId"]},{"required":["fromAgentId"]}]}}}
       ]
     }
   }

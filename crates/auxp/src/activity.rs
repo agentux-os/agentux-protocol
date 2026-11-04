@@ -2,6 +2,14 @@
 //! `execution.activity.v1` capability.
 use serde::{Deserialize, Serialize};
 
+fn deserialize_present<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: Deserialize<'de>,
+{
+    T::deserialize(deserializer).map(Some)
+}
+
 pub const ACTIVITY_SCHEMA_VERSION: &str = "v1";
 pub const MAX_SUMMARY_CHARS: usize = 2_000;
 pub const MAX_ARTIFACTS: usize = 16;
@@ -18,19 +26,47 @@ pub struct Activity {
     pub run_id: String,
     pub agent_id: String,
     pub role_id: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(
+        default,
+        deserialize_with = "deserialize_present",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub session_id: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(
+        default,
+        deserialize_with = "deserialize_present",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub task_id: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(
+        default,
+        deserialize_with = "deserialize_present",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub parent_task_id: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(
+        default,
+        deserialize_with = "deserialize_present",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub attempt: Option<u32>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(
+        default,
+        deserialize_with = "deserialize_present",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub causation_id: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(
+        default,
+        deserialize_with = "deserialize_present",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub delegation_id: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(
+        default,
+        deserialize_with = "deserialize_present",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub tool_call_id: Option<String>,
     #[serde(flatten)]
     pub kind: ActivityKind,
@@ -134,8 +170,22 @@ impl Activity {
             ("agentId", &self.agent_id),
             ("roleId", &self.role_id),
         ] {
-            if value.is_empty() || value.len() > 128 {
-                return Err(format!("{key} must contain 1..=128 bytes"));
+            if value.is_empty() || value.chars().count() > 128 {
+                return Err(format!("{key} must contain 1..=128 characters"));
+            }
+        }
+        for (key, value) in [
+            ("sessionId", self.session_id.as_deref()),
+            ("taskId", self.task_id.as_deref()),
+            ("parentTaskId", self.parent_task_id.as_deref()),
+            ("causationId", self.causation_id.as_deref()),
+            ("delegationId", self.delegation_id.as_deref()),
+            ("toolCallId", self.tool_call_id.as_deref()),
+        ] {
+            if value.is_some_and(|v| v.is_empty() || v.chars().count() > 128) {
+                return Err(format!(
+                    "{key} must contain 1..=128 characters when present"
+                ));
             }
         }
         if self.attempt == Some(0) {
@@ -150,6 +200,26 @@ impl Activity {
         ) && self.task_id.as_deref().is_none_or(str::is_empty)
         {
             return Err("task activity requires taskId".into());
+        }
+        if matches!(
+            &self.kind,
+            ActivityKind::TaskAssigned { .. }
+                | ActivityKind::Delegated { .. }
+                | ActivityKind::Handoff { .. }
+                | ActivityKind::ResultReturned { .. }
+        ) && self.delegation_id.as_deref().is_none_or(str::is_empty)
+        {
+            return Err("delegation activity requires delegationId".into());
+        }
+        if matches!(
+            &self.kind,
+            ActivityKind::ToolStarted { .. }
+                | ActivityKind::ToolProgress { .. }
+                | ActivityKind::ToolCompleted { .. }
+                | ActivityKind::ToolFailed { .. }
+        ) && self.tool_call_id.as_deref().is_none_or(str::is_empty)
+        {
+            return Err("tool activity requires toolCallId".into());
         }
         let summary = match &self.kind {
             ActivityKind::PlanCreated { summary }
@@ -175,16 +245,50 @@ impl Activity {
                 return Err("tool progress must be 0..=100".into());
             }
         }
+        let bounded_variant_text: Vec<(&str, &str, usize)> = match &self.kind {
+            ActivityKind::TaskCreated { task_name, .. } => vec![("taskName", task_name, 256)],
+            ActivityKind::ToolStarted { tool_name, .. }
+            | ActivityKind::ToolProgress { tool_name, .. }
+            | ActivityKind::ToolCompleted { tool_name, .. }
+            | ActivityKind::ToolFailed { tool_name, .. } => vec![("toolName", tool_name, 128)],
+            ActivityKind::TaskAssigned {
+                to_agent_id,
+                to_role_id,
+                ..
+            }
+            | ActivityKind::Delegated {
+                to_agent_id,
+                to_role_id,
+                ..
+            }
+            | ActivityKind::Handoff {
+                to_agent_id,
+                to_role_id,
+                ..
+            } => vec![
+                ("toAgentId", to_agent_id, 128),
+                ("toRoleId", to_role_id, 128),
+            ],
+            ActivityKind::ResultReturned { from_agent_id, .. } => {
+                vec![("fromAgentId", from_agent_id, 128)]
+            }
+            _ => Vec::new(),
+        };
+        for (key, value, max) in bounded_variant_text {
+            if value.is_empty() || value.chars().count() > max {
+                return Err(format!("{key} must contain 1..={max} characters"));
+            }
+        }
         if let ActivityKind::ArtifactAvailable { artifacts, .. } = &self.kind {
             if artifacts.len() > MAX_ARTIFACTS {
                 return Err("activity has more than 16 artifact references".into());
             }
             for artifact in artifacts {
                 if artifact.artifact_id.is_empty()
-                    || artifact.artifact_id.len() > 128
+                    || artifact.artifact_id.chars().count() > 128
                     || artifact.media_type.is_empty()
-                    || artifact.media_type.len() > 127
-                    || artifact.uri.len() > 2048
+                    || artifact.media_type.chars().count() > 127
+                    || artifact.uri.chars().count() > 2048
                 {
                     return Err("artifact identity, media type or URI exceeds its limit".into());
                 }
@@ -232,6 +336,28 @@ mod tests {
                 .validate()
                 .is_err()
         );
+    }
+
+    #[test]
+    fn identifier_limits_count_unicode_characters_like_json_schema() {
+        let mut value = json!({"schemaVersion":"v1","activityId":"é".repeat(128),"missionId":"m","runId":"r","agentId":"a","roleId":"worker","type":"plan_created","summary":"ok"});
+        serde_json::from_value::<Activity>(value.clone())
+            .unwrap()
+            .validate()
+            .unwrap();
+        value["activityId"] = json!("é".repeat(129));
+        assert!(
+            serde_json::from_value::<Activity>(value)
+                .unwrap()
+                .validate()
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn optional_activity_fields_reject_null_like_the_schema() {
+        let value = json!({"schemaVersion":"v1","activityId":"a","missionId":"m","runId":"r","agentId":"a","roleId":"worker","sessionId":null,"type":"plan_created","summary":"ok"});
+        assert!(serde_json::from_value::<Activity>(value).is_err());
     }
 
     #[test]

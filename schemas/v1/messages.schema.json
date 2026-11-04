@@ -10,12 +10,14 @@
       "properties": {
         "protocolVersion": {"const": "v1"},
         "organizationId": {"type": "string", "minLength": 1},
-        "nodeId": {"type": "string", "minLength": 1},
+        "nodeId": {"type": "string", "minLength": 1, "maxLength": 128},
         "messageId": {"type": "string", "minLength": 1},
         "occurredAt": {"type": "string", "format": "date-time"},
         "commandId": {"type": "string", "minLength": 1},
         "eventId": {"type": "string", "minLength": 1},
-        "sequence": {"type": "integer", "minimum": 1},
+        "sequence": {"type": "integer", "minimum": 1, "maximum": 9223372036854775807},
+        "lastAcknowledgedSequence": {"type": "integer", "minimum": 0, "maximum": 9223372036854775807},
+        "throughSequence": {"type": "integer", "minimum": 0, "maximum": 9223372036854775807},
         "missionId": {"type": "string", "minLength": 1},
         "runId": {"type": "string", "minLength": 1},
         "sessionId": {"type": "string", "minLength": 1},
@@ -24,19 +26,20 @@
       "additionalProperties": true
     },
     "resumeResult": {
+      "description": "Command invokes node.resume on the node; replayed node notifications are sent to Command on the event channel, never returned in this result.",
       "type": "object",
-      "required": ["status", "nodeId", "requestedAfterSequence", "oldestAvailableSequence", "highWaterSequence", "events"],
+      "required": ["status", "nodeId", "requestedAfterSequence", "oldestAvailableSequence", "highWaterSequence", "eventsReplayed", "snapshotRequired"],
       "properties": {
         "status": {"enum": ["replay", "cursor_expired"]},
         "nodeId": {"type": "string", "minLength": 1},
-        "requestedAfterSequence": {"type": "integer", "minimum": 0},
-        "oldestAvailableSequence": {"type": "integer", "minimum": 0},
-        "highWaterSequence": {"type": "integer", "minimum": 0},
-        "events": {"type": "array", "items": {"$ref": "#/$defs/notification"}},
+        "requestedAfterSequence": {"type": "integer", "minimum": 0, "maximum": 9223372036854775807},
+        "oldestAvailableSequence": {"type": "integer", "minimum": 0, "maximum": 9223372036854775807},
+        "highWaterSequence": {"type": "integer", "minimum": 0, "maximum": 9223372036854775807},
+        "eventsReplayed": {"type": "integer", "minimum": 0, "maximum": 9223372036854775807},
         "snapshotRequired": {"type": "boolean"}
       },
       "allOf": [
-        {"if": {"properties": {"status": {"const": "cursor_expired"}}, "required": ["status"]}, "then": {"required": ["snapshotRequired"], "properties": {"snapshotRequired": {"const": true}, "events": {"maxItems": 0}}}},
+        {"if": {"properties": {"status": {"const": "cursor_expired"}}, "required": ["status"]}, "then": {"properties": {"snapshotRequired": {"const": true}, "eventsReplayed": {"const": 0}}}},
         {"if": {"properties": {"status": {"const": "replay"}}, "required": ["status"]}, "then": {"required": ["snapshotRequired"], "properties": {"snapshotRequired": {"const": false}}}}
       ],
       "additionalProperties": false
@@ -66,7 +69,7 @@
   "oneOf": [
     {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "node.hello"}, "params": {"required": ["capabilities", "agentuxVersion", "supportedProtocolVersions"]}}}]},
     {"allOf": [{"$ref": "#/$defs/notification"}, {"properties": {"method": {"const": "node.heartbeat"}, "params": {"required": ["status", "capacity"]}}}]},
-    {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "node.resume"}, "params": {"required": ["lastAcknowledgedSequence"]}}}]},
+    {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "node.resume"}, "params": {"required": ["commandId", "lastAcknowledgedSequence"]}}}]},
     {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "run.start"}, "params": {"required": ["commandId", "missionId", "runId", "repository", "prompt", "pipeline", "roles", "budget", "isolationPolicy", "requestedCapabilities"]}}}]},
     {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"enum": ["run.cancel", "run.pause", "run.resume"]}, "params": {"required": ["commandId", "runId"]}}}]},
     {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "request.resolve"}, "params": {"required": ["commandId", "runId", "requestId", "resolution"]}}}]},
@@ -76,6 +79,7 @@
     {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "harness.test"}, "params": {"required": ["commandId", "harness"]}}}]},
     {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "limits.clear"}, "params": {"required": ["commandId", "harness"]}}}]},
     {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "preferences.set"}, "params": {"required": ["commandId", "preferences"]}}}]},
+    {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "node.events.ack"}, "params": {"required": ["commandId", "throughSequence"]}}}]},
     {"allOf": [{"$ref": "#/$defs/notification"}, {"properties": {"method": {"enum": ["node.status_changed", "run.accepted", "run.started", "run.updated", "session.event", "approval.requested", "gate.completed", "run.completed", "run.failed", "artifact.available", "node.alert", "harness.status", "harness.limits_changed", "command.denied", "command.completed"]}, "params": {"required": ["eventId", "sequence"]}}}]},
     {"allOf": [{"$ref": "#/$defs/notification"}, {"properties": {"method": {"const": "execution.activity"}, "params": {"required": ["eventId", "sequence", "activity"], "properties": {"activity": {"$ref": "execution-activity.schema.json#/$defs/activity"}}}}}]}
   ]
