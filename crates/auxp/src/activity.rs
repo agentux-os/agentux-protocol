@@ -366,6 +366,26 @@ mod tests {
     }
 
     #[test]
+    fn serde_validation_matches_variant_fields_and_rejects_unknown_activity_properties() {
+        let cases = [
+            json!({"schemaVersion":"v1","activityId":"a","missionId":"m","runId":"r","agentId":"a","roleId":"worker","taskId":"t","type":"task_created","taskName":"x".repeat(257),"status":"pending","summary":"ok"}),
+            json!({"schemaVersion":"v1","activityId":"a","missionId":"m","runId":"r","agentId":"a","roleId":"worker","type":"tool_started","toolName":"x".repeat(129),"toolCallId":"tool-1","summary":"ok"}),
+            json!({"schemaVersion":"v1","activityId":"a","missionId":"m","runId":"r","agentId":"a","roleId":"worker","delegationId":"d","type":"delegated","toAgentId":"x".repeat(129),"toRoleId":"reviewer","summary":"ok"}),
+            json!({"schemaVersion":"v1","activityId":"a","missionId":"m","runId":"r","agentId":"a","roleId":"worker","delegationId":"d","type":"result_returned","fromAgentId":"x".repeat(129),"summary":"ok"}),
+            json!({"schemaVersion":"v1","activityId":"a","missionId":"m","runId":"r","agentId":"a","roleId":"worker","type":"tool_started","toolName":"search","summary":"missing call id"}),
+            json!({"schemaVersion":"v1","activityId":"a","missionId":"m","runId":"r","agentId":"a","roleId":"worker","type":"result_returned","fromAgentId":"agent-b","summary":"missing delegation id"}),
+            json!({"schemaVersion":"v1","activityId":"a","missionId":"m","runId":"r","agentId":"a","roleId":"worker","type":"plan_created","summary":"ok","unexpected":"field"}),
+        ];
+        for value in cases {
+            let rejected = match serde_json::from_value::<Activity>(value) {
+                Ok(activity) => activity.validate().is_err(),
+                Err(_) => true,
+            };
+            assert!(rejected, "schema-invalid activity was accepted");
+        }
+    }
+
+    #[test]
     fn artifact_reference_bounds_and_uri_are_enforced() {
         let activity = Activity {
             schema_version: "v1".into(),
