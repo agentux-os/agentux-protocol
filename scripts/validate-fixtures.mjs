@@ -13,6 +13,7 @@ const activitySchema = JSON.parse(await readFile(resolve(root, "schemas/v1/execu
 const replayFixtures = JSON.parse(await readFile(resolve(root, "fixtures/v1/replay.json"), "utf8"));
 const snapshotSchema = JSON.parse(await readFile(resolve(root, "schemas/v1/node-snapshot.schema.json"), "utf8"));
 const snapshotFixtures = JSON.parse(await readFile(resolve(root, "fixtures/v1/node-snapshot.json"), "utf8"));
+const requiredSnapshotProjections = ["approval", "artifact", "command", "gate", "harness", "limit", "node", "node_alert", "run", "session", "task"];
 
 if (schema.$defs?.baseParams?.properties?.protocolVersion?.const !== "v1") {
   throw new Error("AUXP schema must pin protocolVersion to v1");
@@ -45,7 +46,7 @@ const accepted = (message) => {
     if (Object.keys(isolation).some((key) => !["mode", "network", "source"].includes(key))) return false;
   }
   if (message.method === "node.resume" && (!Number.isInteger(message.params.lastAcknowledgedSequence) || message.params.lastAcknowledgedSequence < 0 || !message.params.commandId)) return false;
-  if (message.method === "node.events.ack" && (!Number.isInteger(message.params.throughSequence) || message.params.throughSequence < 0 || !message.params.commandId)) return false;
+  if (message.method === "node.events.ack" && (!Number.isInteger(message.params.throughSequence) || message.params.throughSequence < 0 || !message.params.commandId || ![undefined, "events", "snapshot_checkpoint"].includes(message.params.acknowledgementType) || (message.params.acknowledgementType === "snapshot_checkpoint" && (typeof message.params.checkpointId !== "string" || message.params.checkpointId.length < 1 || message.params.checkpointId.length > 128)) || (message.params.checkpointId !== undefined && message.params.acknowledgementType !== "snapshot_checkpoint"))) return false;
   if (message.method === "node.snapshot" && (!message.params.commandId || !message.params.checkpointId || !Number.isInteger(message.params.requestedAfterSequence) || message.params.requestedAfterSequence < 0 || !Number.isInteger(message.params.pageSize) || message.params.pageSize < 1 || message.params.pageSize > 100 || (message.params.pageToken !== undefined && (typeof message.params.pageToken !== "string" || message.params.pageToken.length > 2048)))) return false;
   if ("apiKey" in message.params || "providerToken" in message.params) return false;
   const forbidden = (value) => {
@@ -114,15 +115,20 @@ for (const request of snapshotFixtures.requests.invalid) {
 const validSnapshotPages = (pages) => {
   if (!Array.isArray(pages) || pages.length === 0) return false;
   const first = pages[0];
-  if (first.schemaVersion !== "v1" || !first.checkpointId || !first.snapshotId || !first.organizationId || !first.nodeId || !Number.isInteger(first.highWaterSequence) || !Number.isInteger(first.requestedAfterSequence) || first.highWaterSequence < first.requestedAfterSequence || first.pageCount !== pages.length || first.pageCount > 10000 || first.entryCount < 0 || first.entryCount > 10000) return false;
+  if (first.schemaVersion !== "v1" || !first.checkpointId || !first.snapshotId || !first.organizationId || !first.nodeId || !Number.isInteger(first.highWaterSequence) || !Number.isInteger(first.requestedAfterSequence) || first.highWaterSequence < first.requestedAfterSequence || first.pageCount !== pages.length || first.pageCount > 10000 || first.entryCount < 0 || first.entryCount > 10000 || first.projectionCoverage?.join(",") !== requiredSnapshotProjections.join(",")) return false;
   const ids = [];
   for (let i = 0; i < pages.length; i++) {
     const page = pages[i];
-    if (page.schemaVersion !== first.schemaVersion || page.checkpointId !== first.checkpointId || page.snapshotId !== first.snapshotId || page.organizationId !== first.organizationId || page.nodeId !== first.nodeId || page.requestedAfterSequence !== first.requestedAfterSequence || page.highWaterSequence !== first.highWaterSequence || page.pageCount !== first.pageCount || page.entryCount !== first.entryCount || page.pageIndex !== i || !Array.isArray(page.entries) || page.entries.length > 100 || Buffer.byteLength(JSON.stringify(page), "utf8") > 1048576 || "events" in page || "activities" in page) return false;
+    if (page.schemaVersion !== first.schemaVersion || page.checkpointId !== first.checkpointId || page.snapshotId !== first.snapshotId || page.organizationId !== first.organizationId || page.nodeId !== first.nodeId || page.requestedAfterSequence !== first.requestedAfterSequence || page.highWaterSequence !== first.highWaterSequence || page.pageCount !== first.pageCount || page.entryCount !== first.entryCount || page.projectionCoverage?.join(",") !== requiredSnapshotProjections.join(",") || page.pageIndex !== i || page.pageIndex >= page.pageCount || !Array.isArray(page.entries) || page.entries.length > 100 || Buffer.byteLength(JSON.stringify(page), "utf8") > 1048576 || "events" in page || "activities" in page) return false;
+    if (i === 0 ? page.pageToken !== undefined : page.pageToken !== pages[i - 1].nextPageToken) return false;
     if ((i < pages.length - 1) !== (typeof page.nextPageToken === "string" && page.nextPageToken.length > 0)) return false;
     for (const entry of page.entries) {
-      if (!entry.entryId || !["run", "removed"].includes(entry.kind) || (entry.kind === "run" && (entry.run?.runId !== entry.entryId || !entry.run.missionId || !entry.run.status || !entry.run.currentState || typeof entry.run.currentState !== "object")) || (entry.kind === "removed" && (!entry.missionId || !entry.removedAt))) return false;
-      ids.push(entry.entryId);
+      if (!entry.entryId || !requiredSnapshotProjections.includes(entry.projectionType) || !entry.entryId.startsWith(`${entry.projectionType}:`) || entry.entryId.length === entry.projectionType.length + 1) return false;
+      if (entry.kind === "state" && (!entry.state || typeof entry.state !== "object" || Array.isArray(entry.state) || !entry.state.currentState || typeof entry.state.currentState !== "object" || Array.isArray(entry.state.currentState))) return false;
+      if (entry.kind === "state" && entry.projectionType === "run" && (entry.state.owner !== "command" || !entry.state.commandId || !entry.state.organizationId || entry.state.organizationId !== page.organizationId || entry.state.runId !== entry.entryId.slice("run:".length) || entry.state.currentState.sessions === undefined || entry.state.currentState.gates === undefined || entry.state.currentState.tasks === undefined)) return false;
+      if (entry.kind === "removed" && (!Number.isInteger(entry.removedAtSequence) || entry.removedAtSequence <= first.requestedAfterSequence || entry.removedAtSequence > first.highWaterSequence || (entry.projectionType === "run" && (entry.runId !== entry.entryId.slice("run:".length) || !entry.runId)))) return false;
+      if (!(["state", "removed"].includes(entry.kind))) return false;
+      ids.push(`${entry.projectionType}:${entry.entryId}`);
     }
   }
   return ids.length === first.entryCount && ids.every((id, i) => i === 0 || ids[i - 1] < id);
@@ -138,19 +144,29 @@ if (!ackValid({...snapshotFixtures.checkpointAck.valid, highWaterSequence:57})) 
 for (const ack of snapshotFixtures.checkpointAck.invalid) {
   if (!ack.expectedError || ackValid(ack)) throw new Error(`invalid checkpoint ACK accepted: ${ack.expectedError}`);
 }
+const snapshotAckMethod = schema.oneOf.find((branch) => branch.allOf[1].properties.method.const === "node.events.ack");
+const checkpointAckRule = snapshotAckMethod?.allOf[1].properties.params.allOf?.find((rule) => rule.if?.properties?.acknowledgementType?.const === "snapshot_checkpoint");
+if (!snapshotAckMethod || !checkpointAckRule?.then?.required?.includes("checkpointId") || !schema.$defs.baseParams.properties.checkpointId) throw new Error("checkpoint ACK must bind node.events.ack to a required checkpointId");
+for (const request of snapshotFixtures.checkpointAck.requests.valid) {
+  if (!accepted(request)) throw new Error("valid checkpoint ACK request refused");
+}
+for (const request of snapshotFixtures.checkpointAck.requests.invalid) {
+  if (!request.expectedError || accepted(request)) throw new Error(`invalid checkpoint ACK accepted: ${request.expectedError}`);
+}
 const failureCodes = new Set(snapshotSchema.$defs?.failure?.properties?.code?.enum ?? []);
+const retryableByCode = {snapshot_unavailable:true, snapshot_expired:true, snapshot_too_large:false, snapshot_entry_too_large:false, checkpoint_conflict:false, stale_checkpoint:false, checkpoint_coverage_incomplete:false, checkpoint_incomplete:true, checkpoint_scope_mismatch:false, checkpoint_sequence_mismatch:false};
 for (const failure of snapshotFixtures.failures.valid) {
-  if (!failureCodes.has(failure.code) || !failure.checkpointId || typeof failure.retryable !== "boolean") throw new Error(`invalid snapshot failure fixture: ${failure.code}`);
+  if (!failureCodes.has(failure.code) || !failure.checkpointId || failure.retryable !== retryableByCode[failure.code]) throw new Error(`invalid snapshot failure fixture: ${failure.code}`);
 }
 for (const failure of snapshotFixtures.failures.invalid) {
-  if (!failure.expectedError || (failureCodes.has(failure.code) && failure.checkpointId && typeof failure.retryable === "boolean")) throw new Error(`invalid snapshot failure accepted: ${failure.expectedError}`);
+  if (!failure.expectedError || (failureCodes.has(failure.code) && failure.checkpointId && failure.retryable === retryableByCode[failure.code])) throw new Error(`invalid snapshot failure accepted: ${failure.expectedError}`);
 }
 const limits = snapshotFixtures.limits;
 if (limits.maxEntriesPerPage !== 100 || limits.maxPageBytes !== 1048576 || limits.maxEntries !== 10000 || limits.maxSnapshotBytes !== 67108864 || limits.snapshotExpirySeconds !== 900 || snapshotSchema.$defs.page.properties.entries.maxItems !== limits.maxEntriesPerPage || snapshotSchema.$defs.page.properties.entryCount.maximum !== limits.maxEntries) {
   throw new Error("snapshot fixtures and schema must pin page, total-size and expiry limits");
 }
 const negotiation = snapshotFixtures.negotiation;
-if (!negotiation.nodeOffer.includes("node.snapshot_checkpoint.v1") || !negotiation.commandAccepted.includes("node.snapshot_checkpoint.v1") || negotiation.snapshotEnabled !== true || negotiation.legacySnapshotEnabled !== false || negotiation.legacyNodeOffer.includes("node.snapshot_checkpoint.v1")) {
+if (!negotiation.nodeOffer.includes("node.snapshot_checkpoint.v1") || !negotiation.nodeOffer.includes("node.event_replay.v1") || !negotiation.commandAccepted.includes("node.snapshot_checkpoint.v1") || !negotiation.commandAccepted.includes("node.event_replay.v1") || negotiation.snapshotEnabled !== true || negotiation.legacySnapshotEnabled !== false || negotiation.legacyNodeOffer.includes("node.snapshot_checkpoint.v1") || negotiation.noReplayCapability.snapshotEnabled !== false || negotiation.noReplayCapability.nodeOffer.includes("node.event_replay.v1")) {
   throw new Error("node snapshots must remain disabled unless the optional capability is mutually negotiated");
 }
 const eventBoundaryValid = (boundary) => boundary.stateReflectsThroughSequence >= boundary.highWaterSequence && boundary.firstReplaySequence === boundary.highWaterSequence + 1 && boundary.eventBeforeCapture <= boundary.highWaterSequence;
@@ -158,9 +174,24 @@ if (!eventBoundaryValid(snapshotFixtures.concurrentEvents.valid)) throw new Erro
 for (const boundary of snapshotFixtures.concurrentEvents.invalid) {
   if (!boundary.expectedError || eventBoundaryValid(boundary)) throw new Error(`invalid snapshot/event boundary accepted: ${boundary.expectedError}`);
 }
+const staleCheckpoint = snapshotFixtures.staleCheckpoint;
+if (staleCheckpoint.valid.requestedAfterSequence !== staleCheckpoint.valid.lastAcceptedAck || staleCheckpoint.valid.beginAccepted !== true || staleCheckpoint.invalid.some((item) => !item.expectedError || item.beginAccepted !== false && item.ackAccepted !== false || (item.requestedAfterSequence !== undefined && item.requestedAfterSequence === item.lastAcceptedAck) || (item.lastAcceptedAckAtStart !== undefined && item.lastAcceptedAckAtStart === item.lastAcceptedAckAtAck))) throw new Error("snapshot capture and checkpoint ACK must compare against the node's last accepted ACK");
+const scopeFixture = snapshotFixtures.scope;
+const snapshotRunIds = snapshotFixtures.pages.valid.flatMap((pages) => pages.flatMap((page) => page.entries.filter((entry) => entry.kind === "state" && entry.projectionType === "run").map((entry) => entry.state.runId)));
+if (scopeFixture.includedRun.included !== true || scopeFixture.includedRun.organizationId !== scopeFixture.authenticatedOrganizationId || scopeFixture.includedRun.owner !== "command" || !scopeFixture.includedRun.commandId || scopeFixture.excludedLocalOnlyRun.included !== false || snapshotRunIds.includes(scopeFixture.excludedLocalOnlyRun.runId)) throw new Error("node-local runs without authenticated Command ownership must be excluded from snapshot inventory");
+const tombstone = snapshotFixtures.tombstones.valid;
+if (!(tombstone.requestedAfterSequence < tombstone.removedAtSequence && tombstone.removedAtSequence <= tombstone.highWaterSequence && tombstone.mustInclude === true && tombstone.minimumRetentionSeconds === 900 && tombstone.pinnedSnapshotRetainsCopy === true)) throw new Error("removal tombstones must survive minimum retention and pinned snapshots");
+if (snapshotFixtures.tombstones.compaction.fullInventoryAuthoritative !== true || snapshotFixtures.tombstones.compaction.omissionRemovesPreviouslyProjectedKey !== true || snapshotFixtures.tombstones.compaction.minimumRetentionSeconds !== 900 || snapshotFixtures.tombstones.compaction.mayCompactWhenNoPinnedSnapshot !== true) throw new Error("tombstone compaction must preserve full-inventory reconciliation semantics");
+for (const item of snapshotFixtures.tombstones.invalid) {
+  const valid = item.compactedAfterSeconds === undefined || item.compactedAfterSeconds >= item.minimumRetentionSeconds;
+  const validInclusion = item.included !== true || item.removedAtSequence > item.requestedAfterSequence;
+  const validPinnedCopy = item.compactedCopyChanged !== true || item.pinnedSnapshot !== true;
+  if (!item.expectedError || (valid && validInclusion && validPinnedCopy)) throw new Error(`invalid tombstone compaction accepted: ${item.expectedError}`);
+}
 if (snapshotSchema.$defs?.page?.properties?.schemaVersion?.const !== "v1" || snapshotSchema.$defs?.page?.properties?.entries?.maxItems !== 100 || snapshotSchema.$defs?.page?.required?.includes("highWaterSequence") !== true) {
   throw new Error("node snapshot schema must pin its version, page bound and checkpoint cursor");
 }
+if (schema.$defs?.nodeSnapshotResult?.$ref !== "node-snapshot.schema.json#/$defs/page") throw new Error("node.snapshot result must use the shared snapshot page schema");
 
 for (const result of replayFixtures.valid) {
   const expired = result.status === "cursor_expired";

@@ -65,77 +65,51 @@ fn node_snapshot_fixtures_enforce_complete_checkpoint_pages_and_ack_safety() {
             request["expectedError"]
         );
     }
-
-    let valid_chain = |pages: &Vec<Value>| {
-        let Some(first) = pages.first() else {
-            return false;
-        };
-        let mut ids = Vec::new();
-        for (index, page) in pages.iter().enumerate() {
-            for key in [
-                "schemaVersion",
-                "checkpointId",
-                "snapshotId",
-                "organizationId",
-                "nodeId",
-                "requestedAfterSequence",
-                "highWaterSequence",
-                "pageCount",
-                "entryCount",
-            ] {
-                if page[key] != first[key] {
-                    return false;
-                }
-            }
-            if page["pageIndex"] != index
-                || page["entries"]
-                    .as_array()
-                    .is_none_or(|entries| entries.len() > 100)
-            {
-                return false;
-            }
-            if (index + 1 < pages.len()) != page.get("nextPageToken").is_some() {
-                return false;
-            }
-            for entry in page["entries"].as_array().unwrap() {
-                let Some(id) = entry["entryId"].as_str() else {
-                    return false;
-                };
-                if entry["kind"] == "run"
-                    && (entry["run"]["runId"] != id
-                        || entry["run"]["missionId"].as_str().is_none()
-                        || entry["run"]["status"].as_str().is_none()
-                        || !entry["run"]["currentState"].is_object())
-                {
-                    return false;
-                }
-                if entry["kind"] == "removed"
-                    && (entry["missionId"].as_str().is_none()
-                        || entry["removedAt"].as_str().is_none())
-                {
-                    return false;
-                }
-                if entry["kind"] != "run" && entry["kind"] != "removed" {
-                    return false;
-                }
-                ids.push(id.to_owned());
-            }
-        }
-        ids.len() == first["entryCount"].as_u64().unwrap_or(u64::MAX) as usize
-            && ids.windows(2).all(|pair| pair[0] < pair[1])
-            && first["highWaterSequence"].as_i64().unwrap_or(-1)
-                >= first["requestedAfterSequence"].as_i64().unwrap_or(i64::MAX)
-            && first["pageCount"].as_u64() == Some(pages.len() as u64)
-    };
-    for pages in fixtures["pages"]["valid"].as_array().unwrap() {
+    for request in fixtures["checkpointAck"]["requests"]["valid"]
+        .as_array()
+        .unwrap()
+    {
+        auxp::validate(request).unwrap();
+    }
+    for request in fixtures["checkpointAck"]["requests"]["invalid"]
+        .as_array()
+        .unwrap()
+    {
         assert!(
-            valid_chain(pages.as_array().unwrap()),
-            "valid checkpoint pages refused: {pages}"
+            auxp::validate(request).is_err(),
+            "{}",
+            request["expectedError"]
         );
     }
+
+    let mut first_valid_chain = None;
+    for pages in fixtures["pages"]["valid"].as_array().unwrap() {
+        let encoded: Vec<Vec<u8>> = pages
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(serde_json::to_vec)
+            .collect::<Result<_, _>>()
+            .unwrap();
+        let refs: Vec<&[u8]> = encoded.iter().map(Vec::as_slice).collect();
+        let validated = auxp::snapshot::validate_page_chain(&refs).unwrap_or_else(|error| {
+            panic!("valid checkpoint page chain refused: {error}: {pages}")
+        });
+        if first_valid_chain.is_none() {
+            first_valid_chain = Some(validated);
+        }
+    }
     for invalid in fixtures["pages"]["invalid"].as_array().unwrap() {
+        let encoded: Vec<Vec<u8>> = invalid["pages"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(serde_json::to_vec)
+            .collect::<Result<_, _>>()
+            .unwrap();
+        let refs: Vec<&[u8]> = encoded.iter().map(Vec::as_slice).collect();
         assert!(
-            !valid_chain(invalid["pages"].as_array().unwrap()),
+            auxp::snapshot::validate_page_chain(&refs).is_err(),
             "{}",
             invalid["expectedError"]
         );
@@ -154,6 +128,40 @@ fn node_snapshot_fixtures_enforce_complete_checkpoint_pages_and_ack_safety() {
             ack["expectedError"]
         );
     }
+    let chain = first_valid_chain.unwrap();
+    chain
+        .validate_checkpoint_ack("org-a", "node-a", "checkpoint-7", 57, 40)
+        .unwrap();
+    assert!(
+        chain
+            .validate_checkpoint_ack("org-other", "node-a", "checkpoint-7", 57, 40)
+            .is_err()
+    );
+    assert!(
+        chain
+            .validate_checkpoint_ack("org-a", "node-a", "wrong-checkpoint", 57, 40)
+            .is_err()
+    );
+    assert!(
+        chain
+            .validate_checkpoint_ack("org-a", "node-a", "checkpoint-7", 58, 40)
+            .is_err()
+    );
+    assert!(
+        chain
+            .validate_checkpoint_ack("org-a", "node-a", "checkpoint-7", 57, 39)
+            .is_err()
+    );
+
+    let empty_page = serde_json::to_vec(&fixtures["pages"]["valid"][1][0]).unwrap();
+    let mut oversized_page = empty_page;
+    oversized_page.resize(auxp::snapshot::MAX_PAGE_BYTES + 1, b' ');
+    assert!(auxp::snapshot::validate_page_chain(&[&oversized_page]).is_err());
+
+    let mut max_sized_page = serde_json::to_vec(&fixtures["pages"]["valid"][1][0]).unwrap();
+    max_sized_page.resize(auxp::snapshot::MAX_PAGE_BYTES, b' ');
+    let over_total: Vec<&[u8]> = vec![max_sized_page.as_slice(); 65];
+    assert!(auxp::snapshot::validate_page_chain(&over_total).is_err());
 }
 
 #[test]

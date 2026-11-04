@@ -42,5 +42,10 @@ mod tests {
                     .is_some_and(|id| id.ends_with(".schema.json"))
             );
         }
+        let messages: serde_json::Value = serde_json::from_str(MESSAGES).unwrap();
+        assert_eq!(
+            messages["$defs"]["nodeSnapshotResult"]["$ref"],
+            "node-snapshot.schema.json#/$defs/page"
+        );
     }
 }

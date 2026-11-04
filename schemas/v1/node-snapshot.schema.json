@@ -6,56 +6,1199 @@
     "failure": {
       "description": "Value carried in JSON-RPC error.data when a checkpoint cannot safely be completed or acknowledged. No failure advances the receiver or sender cursor.",
       "type": "object",
-      "required": ["code", "checkpointId", "retryable"],
+      "required": [
+        "code",
+        "checkpointId",
+        "retryable"
+      ],
       "properties": {
-        "code": {"enum": ["snapshot_expired", "snapshot_too_large", "snapshot_entry_too_large", "checkpoint_conflict", "stale_checkpoint", "checkpoint_incomplete", "checkpoint_scope_mismatch", "checkpoint_sequence_mismatch"]},
-        "checkpointId": {"type": "string", "minLength": 1, "maxLength": 128},
-        "retryable": {"type": "boolean"}
+        "code": {
+          "enum": [
+            "snapshot_unavailable",
+            "snapshot_expired",
+            "snapshot_too_large",
+            "snapshot_entry_too_large",
+            "checkpoint_conflict",
+            "stale_checkpoint",
+            "checkpoint_coverage_incomplete",
+            "checkpoint_incomplete",
+            "checkpoint_scope_mismatch",
+            "checkpoint_sequence_mismatch"
+          ]
+        },
+        "checkpointId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "retryable": {
+          "type": "boolean"
+        }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "const": "snapshot_entry_too_large"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "retryable": {
+                "const": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "const": "snapshot_unavailable"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "retryable": {
+                "const": true
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "const": "checkpoint_conflict"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "retryable": {
+                "const": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "const": "stale_checkpoint"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "retryable": {
+                "const": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "const": "checkpoint_coverage_incomplete"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "retryable": {
+                "const": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "const": "snapshot_expired"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "retryable": {
+                "const": true
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "const": "checkpoint_sequence_mismatch"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "retryable": {
+                "const": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "const": "checkpoint_scope_mismatch"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "retryable": {
+                "const": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "const": "snapshot_too_large"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "retryable": {
+                "const": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "const": "checkpoint_incomplete"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "properties": {
+              "retryable": {
+                "const": true
+              }
+            }
+          }
+        }
+      ]
     },
-    "run": {
-      "type": "object",
-      "required": ["runId", "missionId", "status", "currentState"],
-      "properties": {
-        "runId": {"type": "string", "minLength": 1, "maxLength": 128},
-        "missionId": {"type": "string", "minLength": 1, "maxLength": 128},
-        "status": {"enum": ["accepted", "running", "paused", "completed", "failed", "cancelled"]},
-        "currentState": {"description": "Complete authoritative present state for this run as defined by the negotiated node snapshot schemaVersion. It is not an event or a history of transitions.", "type": "object"}
-      },
-      "additionalProperties": false
+    "projectionType": {
+      "enum": [
+        "approval",
+        "artifact",
+        "command",
+        "gate",
+        "harness",
+        "limit",
+        "node",
+        "node_alert",
+        "run",
+        "session",
+        "task"
+      ]
     },
     "entry": {
       "oneOf": [
-        {"type": "object", "required": ["kind", "entryId", "run"], "properties": {"kind": {"const": "run"}, "entryId": {"type": "string", "minLength": 1, "maxLength": 128}, "run": {"$ref": "#/$defs/run"}}, "additionalProperties": false},
-        {"type": "object", "required": ["kind", "entryId", "missionId", "removedAt"], "properties": {"kind": {"const": "removed"}, "entryId": {"type": "string", "minLength": 1, "maxLength": 128}, "missionId": {"type": "string", "minLength": 1, "maxLength": 128}, "removedAt": {"type": "string", "format": "date-time"}}, "additionalProperties": false}
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "projectionType",
+            "entryId",
+            "state"
+          ],
+          "properties": {
+            "kind": {
+              "const": "state"
+            },
+            "projectionType": {
+              "$ref": "#/$defs/projectionType"
+            },
+            "entryId": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 256
+            },
+            "state": {
+              "description": "Complete authoritative current value for this projection key, including nested current task, gate and session state where applicable. This is a state object, never a synthesized event.",
+              "type": "object",
+              "required": [
+                "currentState"
+              ],
+              "properties": {
+                "currentState": {
+                  "type": "object",
+                  "minProperties": 1
+                }
+              }
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "required": [
+                  "projectionType"
+                ],
+                "properties": {
+                  "projectionType": {
+                    "const": "approval"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "state": {
+                    "required": [
+                      "approvalId",
+                      "organizationId",
+                      "status"
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "required": [
+                  "projectionType"
+                ],
+                "properties": {
+                  "projectionType": {
+                    "const": "artifact"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "state": {
+                    "required": [
+                      "artifactId",
+                      "organizationId"
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "required": [
+                  "projectionType"
+                ],
+                "properties": {
+                  "projectionType": {
+                    "const": "command"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "state": {
+                    "required": [
+                      "commandId",
+                      "organizationId",
+                      "status"
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "required": [
+                  "projectionType"
+                ],
+                "properties": {
+                  "projectionType": {
+                    "const": "gate"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "state": {
+                    "required": [
+                      "gateId",
+                      "organizationId",
+                      "runId",
+                      "status"
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "required": [
+                  "projectionType"
+                ],
+                "properties": {
+                  "projectionType": {
+                    "const": "harness"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "state": {
+                    "required": [
+                      "harnessId"
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "required": [
+                  "projectionType"
+                ],
+                "properties": {
+                  "projectionType": {
+                    "const": "limit"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "state": {
+                    "required": [
+                      "limitId"
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "required": [
+                  "projectionType"
+                ],
+                "properties": {
+                  "projectionType": {
+                    "const": "node"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "state": {
+                    "required": [
+                      "nodeId",
+                      "status",
+                      "capacity"
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "required": [
+                  "projectionType"
+                ],
+                "properties": {
+                  "projectionType": {
+                    "const": "node_alert"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "state": {
+                    "required": [
+                      "alertId",
+                      "status"
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "required": [
+                  "projectionType"
+                ],
+                "properties": {
+                  "projectionType": {
+                    "const": "run"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "state": {
+                    "required": [
+                      "runId",
+                      "missionId",
+                      "organizationId",
+                      "owner",
+                      "commandId",
+                      "status"
+                    ],
+                    "properties": {
+                      "currentState": {
+                        "required": [
+                          "sessions",
+                          "gates",
+                          "tasks"
+                        ]
+                      },
+                      "owner": {
+                        "const": "command"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "required": [
+                  "projectionType"
+                ],
+                "properties": {
+                  "projectionType": {
+                    "const": "session"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "state": {
+                    "required": [
+                      "sessionId",
+                      "organizationId",
+                      "runId",
+                      "status"
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "required": [
+                  "projectionType"
+                ],
+                "properties": {
+                  "projectionType": {
+                    "const": "task"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "state": {
+                    "required": [
+                      "taskId",
+                      "organizationId",
+                      "runId",
+                      "status"
+                    ]
+                  }
+                }
+              }
+            },
+            {
+              "then": {
+                "properties": {
+                  "entryId": {
+                    "pattern": "^approval:.+$"
+                  }
+                }
+              },
+              "if": {
+                "properties": {
+                  "projectionType": {
+                    "const": "approval"
+                  }
+                },
+                "required": [
+                  "projectionType"
+                ]
+              }
+            },
+            {
+              "then": {
+                "properties": {
+                  "entryId": {
+                    "pattern": "^artifact:.+$"
+                  }
+                }
+              },
+              "if": {
+                "properties": {
+                  "projectionType": {
+                    "const": "artifact"
+                  }
+                },
+                "required": [
+                  "projectionType"
+                ]
+              }
+            },
+            {
+              "then": {
+                "properties": {
+                  "entryId": {
+                    "pattern": "^command:.+$"
+                  }
+                }
+              },
+              "if": {
+                "properties": {
+                  "projectionType": {
+                    "const": "command"
+                  }
+                },
+                "required": [
+                  "projectionType"
+                ]
+              }
+            },
+            {
+              "then": {
+                "properties": {
+                  "entryId": {
+                    "pattern": "^gate:.+$"
+                  }
+                }
+              },
+              "if": {
+                "properties": {
+                  "projectionType": {
+                    "const": "gate"
+                  }
+                },
+                "required": [
+                  "projectionType"
+                ]
+              }
+            },
+            {
+              "then": {
+                "properties": {
+                  "entryId": {
+                    "pattern": "^harness:.+$"
+                  }
+                }
+              },
+              "if": {
+                "properties": {
+                  "projectionType": {
+                    "const": "harness"
+                  }
+                },
+                "required": [
+                  "projectionType"
+                ]
+              }
+            },
+            {
+              "then": {
+                "properties": {
+                  "entryId": {
+                    "pattern": "^limit:.+$"
+                  }
+                }
+              },
+              "if": {
+                "properties": {
+                  "projectionType": {
+                    "const": "limit"
+                  }
+                },
+                "required": [
+                  "projectionType"
+                ]
+              }
+            },
+            {
+              "then": {
+                "properties": {
+                  "entryId": {
+                    "pattern": "^node:.+$"
+                  }
+                }
+              },
+              "if": {
+                "properties": {
+                  "projectionType": {
+                    "const": "node"
+                  }
+                },
+                "required": [
+                  "projectionType"
+                ]
+              }
+            },
+            {
+              "then": {
+                "properties": {
+                  "entryId": {
+                    "pattern": "^node_alert:.+$"
+                  }
+                }
+              },
+              "if": {
+                "properties": {
+                  "projectionType": {
+                    "const": "node_alert"
+                  }
+                },
+                "required": [
+                  "projectionType"
+                ]
+              }
+            },
+            {
+              "then": {
+                "properties": {
+                  "entryId": {
+                    "pattern": "^run:.+$"
+                  }
+                }
+              },
+              "if": {
+                "properties": {
+                  "projectionType": {
+                    "const": "run"
+                  }
+                },
+                "required": [
+                  "projectionType"
+                ]
+              }
+            },
+            {
+              "then": {
+                "properties": {
+                  "entryId": {
+                    "pattern": "^session:.+$"
+                  }
+                }
+              },
+              "if": {
+                "properties": {
+                  "projectionType": {
+                    "const": "session"
+                  }
+                },
+                "required": [
+                  "projectionType"
+                ]
+              }
+            },
+            {
+              "then": {
+                "properties": {
+                  "entryId": {
+                    "pattern": "^task:.+$"
+                  }
+                }
+              },
+              "if": {
+                "properties": {
+                  "projectionType": {
+                    "const": "task"
+                  }
+                },
+                "required": [
+                  "projectionType"
+                ]
+              }
+            }
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "kind",
+            "projectionType",
+            "entryId",
+            "removedAtSequence"
+          ],
+          "properties": {
+            "kind": {
+              "const": "removed"
+            },
+            "projectionType": {
+              "$ref": "#/$defs/projectionType"
+            },
+            "entryId": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 256
+            },
+            "removedAtSequence": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9223372036854775807
+            },
+            "runId": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "required": [
+                  "projectionType"
+                ],
+                "properties": {
+                  "projectionType": {
+                    "const": "run"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "runId"
+                ]
+              }
+            },
+            {
+              "if": {
+                "required": [
+                  "projectionType",
+                  "runId"
+                ],
+                "properties": {
+                  "projectionType": {
+                    "const": "run"
+                  },
+                  "runId": {
+                    "type": "string"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "entryId": {
+                    "pattern": "^run:.+$"
+                  }
+                }
+              }
+            },
+            {
+              "then": {
+                "properties": {
+                  "entryId": {
+                    "pattern": "^approval:.+$"
+                  }
+                }
+              },
+              "if": {
+                "properties": {
+                  "projectionType": {
+                    "const": "approval"
+                  }
+                },
+                "required": [
+                  "projectionType"
+                ]
+              }
+            },
+            {
+              "then": {
+                "properties": {
+                  "entryId": {
+                    "pattern": "^artifact:.+$"
+                  }
+                }
+              },
+              "if": {
+                "properties": {
+                  "projectionType": {
+                    "const": "artifact"
+                  }
+                },
+                "required": [
+                  "projectionType"
+                ]
+              }
+            },
+            {
+              "then": {
+                "properties": {
+                  "entryId": {
+                    "pattern": "^command:.+$"
+                  }
+                }
+              },
+              "if": {
+                "properties": {
+                  "projectionType": {
+                    "const": "command"
+                  }
+                },
+                "required": [
+                  "projectionType"
+                ]
+              }
+            },
+            {
+              "then": {
+                "properties": {
+                  "entryId": {
+                    "pattern": "^gate:.+$"
+                  }
+                }
+              },
+              "if": {
+                "properties": {
+                  "projectionType": {
+                    "const": "gate"
+                  }
+                },
+                "required": [
+                  "projectionType"
+                ]
+              }
+            },
+            {
+              "then": {
+                "properties": {
+                  "entryId": {
+                    "pattern": "^harness:.+$"
+                  }
+                }
+              },
+              "if": {
+                "properties": {
+                  "projectionType": {
+                    "const": "harness"
+                  }
+                },
+                "required": [
+                  "projectionType"
+                ]
+              }
+            },
+            {
+              "then": {
+                "properties": {
+                  "entryId": {
+                    "pattern": "^limit:.+$"
+                  }
+                }
+              },
+              "if": {
+                "properties": {
+                  "projectionType": {
+                    "const": "limit"
+                  }
+                },
+                "required": [
+                  "projectionType"
+                ]
+              }
+            },
+            {
+              "then": {
+                "properties": {
+                  "entryId": {
+                    "pattern": "^node:.+$"
+                  }
+                }
+              },
+              "if": {
+                "properties": {
+                  "projectionType": {
+                    "const": "node"
+                  }
+                },
+                "required": [
+                  "projectionType"
+                ]
+              }
+            },
+            {
+              "then": {
+                "properties": {
+                  "entryId": {
+                    "pattern": "^node_alert:.+$"
+                  }
+                }
+              },
+              "if": {
+                "properties": {
+                  "projectionType": {
+                    "const": "node_alert"
+                  }
+                },
+                "required": [
+                  "projectionType"
+                ]
+              }
+            },
+            {
+              "then": {
+                "properties": {
+                  "entryId": {
+                    "pattern": "^run:.+$"
+                  }
+                }
+              },
+              "if": {
+                "properties": {
+                  "projectionType": {
+                    "const": "run"
+                  }
+                },
+                "required": [
+                  "projectionType"
+                ]
+              }
+            },
+            {
+              "then": {
+                "properties": {
+                  "entryId": {
+                    "pattern": "^session:.+$"
+                  }
+                }
+              },
+              "if": {
+                "properties": {
+                  "projectionType": {
+                    "const": "session"
+                  }
+                },
+                "required": [
+                  "projectionType"
+                ]
+              }
+            },
+            {
+              "then": {
+                "properties": {
+                  "entryId": {
+                    "pattern": "^task:.+$"
+                  }
+                }
+              },
+              "if": {
+                "properties": {
+                  "projectionType": {
+                    "const": "task"
+                  }
+                },
+                "required": [
+                  "projectionType"
+                ]
+              }
+            }
+          ],
+          "additionalProperties": false
+        }
       ]
     },
     "page": {
-      "description": "Every page belongs to one immutable, node-wide snapshot captured atomically at highWaterSequence. The ordered entries across all pages are the complete run inventory at that point.",
+      "description": "Every page belongs to one immutable, node-wide snapshot captured atomically at highWaterSequence. The ordered entries across all pages are complete authoritative inventories for every projectionCoverage kind at that point.",
       "type": "object",
-      "required": ["schemaVersion", "checkpointId", "snapshotId", "organizationId", "nodeId", "requestedAfterSequence", "highWaterSequence", "pageIndex", "pageCount", "entryCount", "entries"],
+      "required": [
+        "schemaVersion",
+        "checkpointId",
+        "snapshotId",
+        "organizationId",
+        "nodeId",
+        "requestedAfterSequence",
+        "highWaterSequence",
+        "projectionCoverage",
+        "pageIndex",
+        "pageCount",
+        "entryCount",
+        "entries"
+      ],
       "properties": {
-        "schemaVersion": {"const": "v1"},
-        "checkpointId": {"type": "string", "minLength": 1, "maxLength": 128},
-        "snapshotId": {"type": "string", "minLength": 1, "maxLength": 128},
-        "organizationId": {"type": "string", "minLength": 1, "maxLength": 128},
-        "nodeId": {"type": "string", "minLength": 1, "maxLength": 128},
-        "requestedAfterSequence": {"type": "integer", "minimum": 0, "maximum": 9223372036854775807},
-        "highWaterSequence": {"type": "integer", "minimum": 0, "maximum": 9223372036854775807},
-        "pageIndex": {"type": "integer", "minimum": 0, "maximum": 9999},
-        "pageCount": {"type": "integer", "minimum": 1, "maximum": 10000},
-        "entryCount": {"type": "integer", "minimum": 0, "maximum": 10000},
-        "entries": {"type": "array", "maxItems": 100, "items": {"$ref": "#/$defs/entry"}},
-        "nextPageToken": {"type": "string", "minLength": 1, "maxLength": 2048}
+        "schemaVersion": {
+          "const": "v1"
+        },
+        "checkpointId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "snapshotId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "organizationId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "nodeId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "requestedAfterSequence": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "highWaterSequence": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "projectionCoverage": {
+          "const": [
+            "approval",
+            "artifact",
+            "command",
+            "gate",
+            "harness",
+            "limit",
+            "node",
+            "node_alert",
+            "run",
+            "session",
+            "task"
+          ]
+        },
+        "pageIndex": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9999
+        },
+        "pageCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "entryCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "entries": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/$defs/entry"
+          }
+        },
+        "pageToken": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "nextPageToken": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        }
       },
       "allOf": [
-        {"description": "pageIndex is zero based and pageCount is constant for the snapshot. Exactly the final page omits nextPageToken; every prior page carries it. requestedAfterSequence must not exceed highWaterSequence."},
-        {"properties": {"highWaterSequence": {"minimum": 0}}},
-        {"if": {"properties": {"pageIndex": {"const": 0}}, "required": ["pageIndex"]}, "then": {"properties": {"pageCount": {"minimum": 1}}}},
-        {"if": {"properties": {"pageCount": {"const": 1}}, "required": ["pageCount"]}, "then": {"properties": {"pageIndex": {"const": 0}}, "not": {"required": ["nextPageToken"]}}}
+        {
+          "description": "pageIndex is zero based and MUST be less than pageCount. requestedAfterSequence must not exceed highWaterSequence. pageToken echoes the request token; each non-final page's nextPageToken exactly matches the following pageToken. The final page omits nextPageToken."
+        },
+        {
+          "properties": {
+            "highWaterSequence": {
+              "minimum": 0
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "pageIndex": {
+                "const": 0
+              }
+            },
+            "required": [
+              "pageIndex"
+            ]
+          },
+          "then": {
+            "properties": {
+              "pageCount": {
+                "minimum": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "pageCount": {
+                "const": 1
+              }
+            },
+            "required": [
+              "pageCount"
+            ]
+          },
+          "then": {
+            "properties": {
+              "pageIndex": {
+                "const": 0
+              }
+            },
+            "not": {
+              "required": [
+                "nextPageToken"
+              ]
+            }
+          }
+        }
       ],
       "additionalProperties": false
     }
-  }
+  },
+  "$comment": "Cross-page invariants (pageIndex < pageCount, sequence ordering, token chain, complete coverage, entry count, and immutable manifest equality) are enforced by the fixture validator and are normative protocol requirements."
 }

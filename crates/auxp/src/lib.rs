@@ -23,6 +23,7 @@ pub mod policy;
 pub mod provision;
 pub mod replay;
 pub mod schemas;
+pub mod snapshot;
 
 mod message;
 

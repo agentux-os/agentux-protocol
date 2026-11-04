@@ -20,6 +20,7 @@
         "throughSequence": {"type": "integer", "minimum": 0, "maximum": 9223372036854775807},
         "requestedAfterSequence": {"type": "integer", "minimum": 0, "maximum": 9223372036854775807},
         "checkpointId": {"type": "string", "minLength": 1, "maxLength": 128},
+        "acknowledgementType": {"enum": ["events", "snapshot_checkpoint"]},
         "pageSize": {"type": "integer", "minimum": 1, "maximum": 100},
         "pageToken": {"type": "string", "minLength": 1, "maxLength": 2048},
         "missionId": {"type": "string", "minLength": 1},
@@ -63,6 +64,7 @@
       ],
       "additionalProperties": false
     },
+    "nodeSnapshotResult": {"$ref": "node-snapshot.schema.json#/$defs/page"},
     "request": {
       "type": "object",
       "required": ["jsonrpc", "id", "method", "params"],
@@ -98,7 +100,7 @@
     {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "harness.test"}, "params": {"required": ["commandId", "harness"]}}}]},
     {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "limits.clear"}, "params": {"required": ["commandId", "harness"]}}}]},
     {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "preferences.set"}, "params": {"required": ["commandId", "preferences"]}}}]},
-    {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "node.events.ack"}, "params": {"required": ["commandId", "throughSequence"]}}}]},
+    {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "node.events.ack"}, "params": {"required": ["commandId", "throughSequence"], "allOf": [{"if": {"properties": {"acknowledgementType": {"const": "snapshot_checkpoint"}}, "required": ["acknowledgementType"]}, "then": {"required": ["checkpointId"]}}, {"if": {"required": ["checkpointId"]}, "then": {"properties": {"acknowledgementType": {"const": "snapshot_checkpoint"}}}}]}}}]},
     {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "node.snapshot"}, "params": {"required": ["commandId", "checkpointId", "requestedAfterSequence", "pageSize"]}}}]},
     {"allOf": [{"$ref": "#/$defs/notification"}, {"properties": {"method": {"enum": ["node.status_changed", "run.accepted", "run.started", "session.event", "approval.requested", "gate.completed", "artifact.available", "node.alert", "harness.status", "harness.limits_changed", "command.denied", "command.completed"]}, "params": {"required": ["eventId", "sequence"]}}}]},
     {"allOf": [{"$ref": "#/$defs/notification"}, {"properties": {"method": {"enum": ["run.updated", "run.completed", "run.failed"]}, "params": {"required": ["eventId", "sequence"], "properties": {"agentIsolation": {"$ref": "#/$defs/agentIsolation"}}}}}]},
