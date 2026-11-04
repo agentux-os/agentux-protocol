@@ -26,7 +26,7 @@ pub mod schemas;
 
 mod message;
 
-pub use message::{Params, validate};
+pub use message::{AgentIsolation, Params, validate};
 
 /// The protocol version every message carries in `protocolVersion`.
 pub const PROTOCOL_VERSION: &str = "v1";
