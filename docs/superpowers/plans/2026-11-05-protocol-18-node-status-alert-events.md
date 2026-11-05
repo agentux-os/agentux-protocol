@@ -41,25 +41,25 @@
 - `Params` exposes `node: Option<NodeState>` for `node.status_changed` and `alert: Option<NodeAlertEvent>` for `node.alert`.
 - `validate` requires `eventId`, `sequence`, and the corresponding typed payload for these two event methods. Update the method/schema required-parameter catalogs together in Task 2 because the contract test requires them to match.
 
-- [ ] **Step 1: Add failing Rust unit tests**
+- [x] **Step 1: Add failing Rust unit tests**
 
 Test valid status values, envelope/payload node identity match, alert state and removal deserialization, `lastObservedAt >= firstObservedAt`, heartbeat rejection when it includes `eventId` or `sequence`, unknown fields, invalid statuses, identity mismatch, malformed removal, an empty summary, and a summary longer than 2,000 Unicode characters.
 
-- [ ] **Step 2: Run the focused tests and confirm they fail for missing types/validation**
+- [x] **Step 2: Run the focused tests and confirm they fail for missing types/validation**
 
 Run: `cargo test -p auxp message::tests`
 Expected: FAIL because the typed event payload types and method-specific checks are not implemented.
 
-- [ ] **Step 3: Implement typed payloads and method-specific validation**
+- [x] **Step 3: Implement typed payloads and method-specific validation**
 
 In `node.rs`, use Serde camelCase fields, closed payload structs, a `kind`-tagged alert event (`state` or `removed`), an object-valued capacity, and RFC3339 timestamps. In `message.rs`, deserialize each event payload, check payload `nodeId` against envelope `nodeId`, validate timestamp order and summary length, and prohibit heartbeat event IDs/sequences. Update `Params` and `lib.rs`; keep generic method metadata and unrelated validation unchanged until Task 2.
 
-- [ ] **Step 4: Run focused tests and confirm they pass**
+- [x] **Step 4: Run focused tests and confirm they pass**
 
 Run: `cargo test -p auxp message::tests`
 Expected: PASS, including the five Review Focus input classes.
 
-- [ ] **Step 5: Commit the Rust contract types and validation**
+- [x] **Step 5: Commit the Rust contract types and validation**
 
 ```bash
 git add crates/auxp/src/node.rs crates/auxp/src/lib.rs crates/auxp/src/message.rs
@@ -80,19 +80,19 @@ git commit -m "feat: validate typed node status and alert events"
 - Consume Task 1's method names and payload shapes.
 - Produce JSON Schema definitions for `nodeState`, `nodeAlertState`, and the tagged alert event; snapshot node and alert state must use the same enums and required current-state fields.
 
-- [ ] **Step 1: Add valid and invalid message and snapshot fixtures**
+- [x] **Step 1: Add valid and invalid message and snapshot fixtures**
 
 Add valid `node.status_changed`, `node.alert` active/resolved/removal, and unsequenced heartbeat examples. Add invalid cases for missing node capacity, envelope identity mismatch, `offline` as operational status, heartbeat with a sequence, invalid alert status/removal, empty or oversized summary, and unknown secret-bearing fields. Add invalid snapshot page chains for an unsupported node status and an incomplete alert `currentState`. Run `node scripts/validate-fixtures.mjs` and confirm it fails because its current validator accepts at least one new invalid event and snapshot.
 
-- [ ] **Step 2: Implement schema definitions and update snapshot alignment**
+- [x] **Step 2: Implement schema definitions and update snapshot alignment**
 
 In `messages.schema.json`, require `node` on `node.status_changed` and `alert` on `node.alert`, with closed typed shapes and status enums. Update `methods::required_params` to require the same fields, keeping the catalog contract test aligned. In `node-snapshot.schema.json`, constrain node status and capacity, require the complete alert current-state shape, and accept only `active`/`resolved`. Update the snapshot fixture from `open` to `active` and supply the full alert record.
 
-- [ ] **Step 3: Make the JavaScript fixture validator enforce the same event and snapshot invariants**
+- [x] **Step 3: Make the JavaScript fixture validator enforce the same event and snapshot invariants**
 
 In `scripts/validate-fixtures.mjs`, check method-specific payloads, heartbeat's lack of event sequence, matching node IDs, valid enums, non-empty summary, summary bounds, and tagged alert state/removal shape. Extend snapshot page validation to reject unsupported node status/capacity and incomplete alert current state. Keep existing validation behavior intact.
 
-- [ ] **Step 4: Run fixture and schema checks**
+- [x] **Step 4: Run fixture and schema checks**
 
 Run: `cargo test -p auxp --test fixtures`
 Expected: PASS for valid messages and snapshot chains; all invalid examples are rejected.
@@ -100,7 +100,7 @@ Expected: PASS for valid messages and snapshot chains; all invalid examples are 
 Run: `node scripts/validate-fixtures.mjs`
 Expected: PASS with valid fixtures accepted and invalid fixtures rejected.
 
-- [ ] **Step 5: Commit schemas and fixtures**
+- [x] **Step 5: Commit schemas and fixtures**
 
 ```bash
 git add schemas/v1/messages.schema.json schemas/v1/node-snapshot.schema.json crates/auxp/src/methods.rs fixtures/v1/messages.json fixtures/v1/node-snapshot.json scripts/validate-fixtures.mjs
@@ -116,11 +116,11 @@ git commit -m "feat: align node snapshot and event schemas"
 - Consume the finalized schema and fixture contract from Tasks 1–2.
 - Document operational node status separately from heartbeat-derived fleet presence, and explain the alert lifecycle and tombstone sequence.
 
-- [ ] **Step 1: Update the event catalog and recovery guidance**
+- [x] **Step 1: Update the event catalog and recovery guidance**
 
 Replace the ambiguous `online/offline/draining/error` event description with `ready/draining/error` operational state. Explain that status/capacity events replace the complete state, heartbeat repeats the last committed values without changing sequence-owned state, and alert state/removal follows the typed schema.
 
-- [ ] **Step 2: Run the complete repository CI commands**
+- [x] **Step 2: Run the complete repository CI commands**
 
 Run: `cargo fmt --all --check`
 Expected: PASS.
@@ -134,7 +134,7 @@ Expected: PASS for all unit, fixture, and snapshot tests.
 Run: `node scripts/validate-fixtures.mjs`
 Expected: PASS.
 
-- [ ] **Step 3: Commit protocol documentation**
+- [x] **Step 3: Commit protocol documentation**
 
 ```bash
 git add README.md
