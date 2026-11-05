@@ -34,13 +34,12 @@
 **Files:**
 - Create: `crates/auxp/src/node.rs`
 - Modify: `crates/auxp/src/lib.rs`
-- Modify: `crates/auxp/src/methods.rs`
 - Modify: `crates/auxp/src/message.rs`
 
 **Interfaces:**
 - Produce public `NodeStatus` (`Ready`, `Draining`, `Error`), `NodeState { node_id: String, status: NodeStatus, capacity: serde_json::Value }`, `AlertStatus` (`Active`, `Resolved`), `NodeAlertState { alert_id, producer, code, condition_key, summary, first_observed_at, last_observed_at, status }`, and `NodeAlertEvent` (tagged by `kind`, with `State { alert: NodeAlertState }` and `Removed { alert_id: String }` variants).
 - `Params` exposes `node: Option<NodeState>` for `node.status_changed` and `alert: Option<NodeAlertEvent>` for `node.alert`.
-- `methods::required_params` requires `eventId`, `sequence`, and the corresponding typed payload for these two event methods.
+- `validate` requires `eventId`, `sequence`, and the corresponding typed payload for these two event methods. Update the method/schema required-parameter catalogs together in Task 2 because the contract test requires them to match.
 
 - [ ] **Step 1: Add failing Rust unit tests**
 
@@ -53,7 +52,7 @@ Expected: FAIL because the typed event payload types and method-specific checks 
 
 - [ ] **Step 3: Implement typed payloads and method-specific validation**
 
-In `node.rs`, use Serde camelCase fields, closed payload structs, a `kind`-tagged alert event (`state` or `removed`), an object-valued capacity, and RFC3339 timestamps. In `message.rs`, deserialize each event payload, check payload `nodeId` against envelope `nodeId`, validate timestamp order and summary length, and prohibit heartbeat event IDs/sequences. Keep generic run/activity validation unchanged.
+In `node.rs`, use Serde camelCase fields, closed payload structs, a `kind`-tagged alert event (`state` or `removed`), an object-valued capacity, and RFC3339 timestamps. In `message.rs`, deserialize each event payload, check payload `nodeId` against envelope `nodeId`, validate timestamp order and summary length, and prohibit heartbeat event IDs/sequences. Update `Params` and `lib.rs`; keep generic method metadata and unrelated validation unchanged until Task 2.
 
 - [ ] **Step 4: Run focused tests and confirm they pass**
 
@@ -63,7 +62,7 @@ Expected: PASS, including the five Review Focus input classes.
 - [ ] **Step 5: Commit the Rust contract types and validation**
 
 ```bash
-git add crates/auxp/src/node.rs crates/auxp/src/lib.rs crates/auxp/src/methods.rs crates/auxp/src/message.rs
+git add crates/auxp/src/node.rs crates/auxp/src/lib.rs crates/auxp/src/message.rs
 git commit -m "feat: validate typed node status and alert events"
 ```
 
@@ -72,6 +71,7 @@ git commit -m "feat: validate typed node status and alert events"
 **Files:**
 - Modify: `schemas/v1/messages.schema.json`
 - Modify: `schemas/v1/node-snapshot.schema.json`
+- Modify: `crates/auxp/src/methods.rs`
 - Modify: `fixtures/v1/messages.json`
 - Modify: `fixtures/v1/node-snapshot.json`
 - Modify: `scripts/validate-fixtures.mjs`
@@ -86,7 +86,7 @@ Add valid `node.status_changed`, `node.alert` active/resolved/removal, and unseq
 
 - [ ] **Step 2: Implement schema definitions and update snapshot alignment**
 
-In `messages.schema.json`, require `node` on `node.status_changed` and `alert` on `node.alert`, with closed typed shapes and status enums. In `node-snapshot.schema.json`, constrain node status and capacity, require the complete alert current-state shape, and accept only `active`/`resolved`. Update the snapshot fixture from `open` to `active` and supply the full alert record.
+In `messages.schema.json`, require `node` on `node.status_changed` and `alert` on `node.alert`, with closed typed shapes and status enums. Update `methods::required_params` to require the same fields, keeping the catalog contract test aligned. In `node-snapshot.schema.json`, constrain node status and capacity, require the complete alert current-state shape, and accept only `active`/`resolved`. Update the snapshot fixture from `open` to `active` and supply the full alert record.
 
 - [ ] **Step 3: Make the JavaScript fixture validator enforce the same event and snapshot invariants**
 
@@ -103,7 +103,7 @@ Expected: PASS with valid fixtures accepted and invalid fixtures rejected.
 - [ ] **Step 5: Commit schemas and fixtures**
 
 ```bash
-git add schemas/v1/messages.schema.json schemas/v1/node-snapshot.schema.json fixtures/v1/messages.json fixtures/v1/node-snapshot.json scripts/validate-fixtures.mjs
+git add schemas/v1/messages.schema.json schemas/v1/node-snapshot.schema.json crates/auxp/src/methods.rs fixtures/v1/messages.json fixtures/v1/node-snapshot.json scripts/validate-fixtures.mjs
 git commit -m "feat: align node snapshot and event schemas"
 ```
 
