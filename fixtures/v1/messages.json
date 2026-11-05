@@ -1180,6 +1180,21 @@
       },
       "jsonrpc": "2.0",
       "expectedError": "unknown secret-bearing alert field"
+    },
+    {
+      "method": "node.alert",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "msg-alert-blank-producer",
+        "occurredAt": "2026-11-05T12:00:00Z",
+        "eventId": "evt-blank-producer",
+        "sequence": 113,
+        "alert": {"kind": "state", "alert": {"alertId": "alert-1", "producer": "   ", "code": "harness_unavailable", "conditionKey": "harness:claude", "summary": "Unavailable", "firstObservedAt": "2026-11-05T12:00:00Z", "lastObservedAt": "2026-11-05T12:00:00Z", "status": "active"}}
+      },
+      "jsonrpc": "2.0",
+      "expectedError": "blank alert producer"
     }
   ]
 }
