@@ -80,17 +80,17 @@ git commit -m "feat: validate typed node status and alert events"
 - Consume Task 1's method names and payload shapes.
 - Produce JSON Schema definitions for `nodeState`, `nodeAlertState`, and the tagged alert event; snapshot node and alert state must use the same enums and required current-state fields.
 
-- [ ] **Step 1: Add valid and invalid message fixtures**
+- [ ] **Step 1: Add valid and invalid message and snapshot fixtures**
 
-Add valid `node.status_changed`, `node.alert` active/resolved/removal, and unsequenced heartbeat examples. Add invalid cases for missing node capacity, envelope identity mismatch, `offline` as operational status, heartbeat with a sequence, invalid alert status/removal, oversized summary, and unknown secret-bearing fields. Run `cargo test -p auxp --test fixtures` and confirm the new invalid cases fail because validation currently accepts them.
+Add valid `node.status_changed`, `node.alert` active/resolved/removal, and unsequenced heartbeat examples. Add invalid cases for missing node capacity, envelope identity mismatch, `offline` as operational status, heartbeat with a sequence, invalid alert status/removal, oversized summary, and unknown secret-bearing fields. Add invalid snapshot page chains for an unsupported node status and an incomplete alert `currentState`. Run `node scripts/validate-fixtures.mjs` and confirm it fails because its current validator accepts at least one new invalid event and snapshot.
 
 - [ ] **Step 2: Implement schema definitions and update snapshot alignment**
 
 In `messages.schema.json`, require `node` on `node.status_changed` and `alert` on `node.alert`, with closed typed shapes and status enums. In `node-snapshot.schema.json`, constrain node status and capacity, require the complete alert current-state shape, and accept only `active`/`resolved`. Update the snapshot fixture from `open` to `active` and supply the full alert record.
 
-- [ ] **Step 3: Make the JavaScript fixture validator enforce the same event invariants**
+- [ ] **Step 3: Make the JavaScript fixture validator enforce the same event and snapshot invariants**
 
-In `scripts/validate-fixtures.mjs`, check method-specific payloads, heartbeat's lack of event sequence, matching node IDs, valid enums, summary bounds, and tagged alert state/removal shape. Keep existing validation behavior intact.
+In `scripts/validate-fixtures.mjs`, check method-specific payloads, heartbeat's lack of event sequence, matching node IDs, valid enums, summary bounds, and tagged alert state/removal shape. Extend snapshot page validation to reject unsupported node status/capacity and incomplete alert current state. Keep existing validation behavior intact.
 
 - [ ] **Step 4: Run fixture and schema checks**
 
