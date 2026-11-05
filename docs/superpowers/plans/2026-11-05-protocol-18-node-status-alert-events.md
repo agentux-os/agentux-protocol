@@ -16,7 +16,7 @@
 - Operational node statuses are `ready`, `draining`, and `error`; fleet `offline` is derived from heartbeat freshness.
 - `node.heartbeat` repeats committed status/capacity and does not carry `eventId` or `sequence`.
 - Alert lifecycle statuses are `active` and `resolved`; removal is an explicit sequenced tombstone keyed by stable `alertId`.
-- Alert summaries are operator-safe and bounded to 2,000 Unicode characters; payloads have closed fields and contain no secrets or unrestricted logs.
+- Alert summaries are operator-safe, non-empty after trimming, and bounded to 2,000 Unicode characters; payloads have closed fields and contain no secrets or unrestricted logs.
 - Snapshot capability remains gated until Core has durable sources for every covered projection.
 
 ## Review Focus
@@ -25,7 +25,7 @@
 - Heartbeat cannot masquerade as a sequence-owned mutation; pin this in Task 1's heartbeat-with-event-sequence rejection test.
 - Unsupported node status values, including `offline`, are rejected; pin this in Task 1's status enum tests.
 - Alert state and removal are mutually exclusive, and invalid lifecycle values are rejected; pin this in Task 1's alert state/removal tests.
-- Oversized summaries and unknown/secret-bearing payload fields are rejected; pin this in Task 1's alert bounds/closed-field tests.
+- Empty/oversized summaries and unknown/secret-bearing payload fields are rejected; pin this in Task 1's alert bounds/closed-field tests.
 
 ---
 
@@ -43,7 +43,7 @@
 
 - [ ] **Step 1: Add failing Rust unit tests**
 
-Test valid status values, envelope/payload node identity match, alert state and removal deserialization, `lastObservedAt >= firstObservedAt`, heartbeat rejection when it includes `eventId` or `sequence`, unknown fields, invalid statuses, identity mismatch, malformed removal, and a summary longer than 2,000 Unicode characters.
+Test valid status values, envelope/payload node identity match, alert state and removal deserialization, `lastObservedAt >= firstObservedAt`, heartbeat rejection when it includes `eventId` or `sequence`, unknown fields, invalid statuses, identity mismatch, malformed removal, an empty summary, and a summary longer than 2,000 Unicode characters.
 
 - [ ] **Step 2: Run the focused tests and confirm they fail for missing types/validation**
 
@@ -82,7 +82,7 @@ git commit -m "feat: validate typed node status and alert events"
 
 - [ ] **Step 1: Add valid and invalid message and snapshot fixtures**
 
-Add valid `node.status_changed`, `node.alert` active/resolved/removal, and unsequenced heartbeat examples. Add invalid cases for missing node capacity, envelope identity mismatch, `offline` as operational status, heartbeat with a sequence, invalid alert status/removal, oversized summary, and unknown secret-bearing fields. Add invalid snapshot page chains for an unsupported node status and an incomplete alert `currentState`. Run `node scripts/validate-fixtures.mjs` and confirm it fails because its current validator accepts at least one new invalid event and snapshot.
+Add valid `node.status_changed`, `node.alert` active/resolved/removal, and unsequenced heartbeat examples. Add invalid cases for missing node capacity, envelope identity mismatch, `offline` as operational status, heartbeat with a sequence, invalid alert status/removal, empty or oversized summary, and unknown secret-bearing fields. Add invalid snapshot page chains for an unsupported node status and an incomplete alert `currentState`. Run `node scripts/validate-fixtures.mjs` and confirm it fails because its current validator accepts at least one new invalid event and snapshot.
 
 - [ ] **Step 2: Implement schema definitions and update snapshot alignment**
 
@@ -90,7 +90,7 @@ In `messages.schema.json`, require `node` on `node.status_changed` and `alert` o
 
 - [ ] **Step 3: Make the JavaScript fixture validator enforce the same event and snapshot invariants**
 
-In `scripts/validate-fixtures.mjs`, check method-specific payloads, heartbeat's lack of event sequence, matching node IDs, valid enums, summary bounds, and tagged alert state/removal shape. Extend snapshot page validation to reject unsupported node status/capacity and incomplete alert current state. Keep existing validation behavior intact.
+In `scripts/validate-fixtures.mjs`, check method-specific payloads, heartbeat's lack of event sequence, matching node IDs, valid enums, non-empty summary, summary bounds, and tagged alert state/removal shape. Extend snapshot page validation to reject unsupported node status/capacity and incomplete alert current state. Keep existing validation behavior intact.
 
 - [ ] **Step 4: Run fixture and schema checks**
 
