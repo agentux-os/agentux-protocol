@@ -28,6 +28,7 @@ pub const COMMANDS: &[&str] = &[
     "preferences.set",
     "node.resume",
     "node.events.ack",
+    "node.snapshot",
 ];
 
 /// Node → Command events: notifications with an `eventId` and a per-node
@@ -96,6 +97,12 @@ pub fn required_params(method: &str) -> Option<&'static [&'static str]> {
         "node.heartbeat" => &["status", "capacity"],
         "node.resume" => &["commandId", "lastAcknowledgedSequence"],
         "node.events.ack" => &["commandId", "throughSequence"],
+        "node.snapshot" => &[
+            "commandId",
+            "checkpointId",
+            "requestedAfterSequence",
+            "pageSize",
+        ],
         "run.start" => &[
             "commandId",
             "missionId",
@@ -137,5 +144,6 @@ mod tests {
         assert_eq!(kind("shell.exec"), None);
         assert_eq!(kind("node.resume"), Some(Kind::Command));
         assert_eq!(kind("node.events.ack"), Some(Kind::Command));
+        assert_eq!(kind("node.snapshot"), Some(Kind::Command));
     }
 }

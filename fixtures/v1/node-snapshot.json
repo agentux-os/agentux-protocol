@@ -1,0 +1,1064 @@
+{
+  "requests": {
+    "valid": [
+      {
+        "jsonrpc": "2.0",
+        "id": "snap-page-0",
+        "method": "node.snapshot",
+        "params": {
+          "protocolVersion": "v1",
+          "organizationId": "org-a",
+          "nodeId": "node-a",
+          "messageId": "msg-snap-0",
+          "occurredAt": "2026-11-04T22:00:00Z",
+          "commandId": "cmd-page-0",
+          "checkpointId": "checkpoint-7",
+          "requestedAfterSequence": 40,
+          "pageSize": 100
+        }
+      },
+      {
+        "jsonrpc": "2.0",
+        "id": "snap-page-1",
+        "method": "node.snapshot",
+        "params": {
+          "protocolVersion": "v1",
+          "organizationId": "org-a",
+          "nodeId": "node-a",
+          "messageId": "msg-snap-1",
+          "occurredAt": "2026-11-04T22:00:01Z",
+          "commandId": "cmd-page-1",
+          "checkpointId": "checkpoint-7",
+          "requestedAfterSequence": 40,
+          "pageSize": 100,
+          "pageToken": "opaque-page-1"
+        }
+      }
+    ],
+    "invalid": [
+      {
+        "expectedError": "missing checkpoint identity",
+        "jsonrpc": "2.0",
+        "id": "bad-snap",
+        "method": "node.snapshot",
+        "params": {
+          "protocolVersion": "v1",
+          "organizationId": "org-a",
+          "nodeId": "node-a",
+          "messageId": "msg-bad-snap",
+          "occurredAt": "2026-11-04T22:00:00Z",
+          "commandId": "cmd-bad",
+          "requestedAfterSequence": 40,
+          "pageSize": 100
+        }
+      },
+      {
+        "expectedError": "page size exceeds limit",
+        "jsonrpc": "2.0",
+        "id": "bad-size",
+        "method": "node.snapshot",
+        "params": {
+          "protocolVersion": "v1",
+          "organizationId": "org-a",
+          "nodeId": "node-a",
+          "messageId": "msg-bad-size",
+          "occurredAt": "2026-11-04T22:00:00Z",
+          "commandId": "cmd-bad-size",
+          "checkpointId": "checkpoint-7",
+          "requestedAfterSequence": 40,
+          "pageSize": 101
+        }
+      }
+    ]
+  },
+  "pages": {
+    "valid": [
+      [
+        {
+          "nodeId": "node-a",
+          "entries": [
+            {
+              "entryId": "approval:approval-1",
+              "projectionType": "approval",
+              "state": {
+                "approvalId": "approval-1",
+                "missionId": "mission-a",
+                "status": "pending",
+                "currentState": {
+                  "organizationId": "org-a",
+                  "status": "pending",
+                  "approvalId": "approval-1",
+                  "missionId": "mission-a"
+                },
+                "organizationId": "org-a"
+              },
+              "kind": "state"
+            },
+            {
+              "entryId": "artifact:artifact-1",
+              "projectionType": "artifact",
+              "state": {
+                "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "runId": "run-001",
+                "artifactId": "artifact-1",
+                "uri": "artifact://artifact-1",
+                "mediaType": "text/plain",
+                "currentState": {
+                  "uri": "artifact://artifact-1",
+                  "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "organizationId": "org-a",
+                  "mediaType": "text/plain",
+                  "artifactId": "artifact-1",
+                  "runId": "run-001"
+                },
+                "organizationId": "org-a"
+              },
+              "kind": "state"
+            },
+            {
+              "entryId": "command:command-1",
+              "projectionType": "command",
+              "state": {
+                "commandId": "command-1",
+                "status": "completed",
+                "method": "run.start",
+                "currentState": {
+                  "organizationId": "org-a",
+                  "commandId": "command-1",
+                  "status": "completed",
+                  "method": "run.start"
+                },
+                "organizationId": "org-a"
+              },
+              "kind": "state"
+            },
+            {
+              "entryId": "gate:gate-1",
+              "projectionType": "gate",
+              "state": {
+                "runId": "run-001",
+                "gateId": "gate-1",
+                "status": "completed",
+                "currentState": {
+                  "organizationId": "org-a",
+                  "gateId": "gate-1",
+                  "status": "completed",
+                  "runId": "run-001"
+                },
+                "organizationId": "org-a"
+              },
+              "kind": "state"
+            },
+            {
+              "entryId": "harness:codex",
+              "projectionType": "harness",
+              "state": {
+                "harnessId": "codex",
+                "installed": true,
+                "signedIn": true,
+                "currentState": {
+                  "installed": true,
+                  "harnessId": "codex",
+                  "signedIn": true
+                }
+              },
+              "kind": "state"
+            },
+            {
+              "entryId": "limit:limit-weekly",
+              "projectionType": "limit",
+              "state": {
+                "harnessId": "codex",
+                "remaining": 12,
+                "kind": "weekly",
+                "currentState": {
+                  "kind": "weekly",
+                  "remaining": 12,
+                  "harnessId": "codex",
+                  "limitId": "limit-weekly"
+                },
+                "limitId": "limit-weekly"
+              },
+              "kind": "state"
+            },
+            {
+              "entryId": "node:node-a",
+              "projectionType": "node",
+              "state": {
+                "status": "ready",
+                "capacity": {
+                  "slots": 2
+                },
+                "currentState": {
+                  "capacity": {
+                    "slots": 2
+                  },
+                  "status": "ready",
+                  "nodeId": "node-a"
+                },
+                "nodeId": "node-a"
+              },
+              "kind": "state"
+            }
+          ],
+          "pageCount": 2,
+          "snapshotId": "snapshot-7",
+          "highWaterSequence": 57,
+          "organizationId": "org-a",
+          "pageIndex": 0,
+          "entryCount": 13,
+          "checkpointId": "checkpoint-7",
+          "projectionCoverage": [
+            "approval",
+            "artifact",
+            "command",
+            "gate",
+            "harness",
+            "limit",
+            "node",
+            "node_alert",
+            "run",
+            "session",
+            "task"
+          ],
+          "nextPageToken": "opaque-page-1",
+          "requestedAfterSequence": 40,
+          "schemaVersion": "v1"
+        },
+        {
+          "nodeId": "node-a",
+          "entries": [
+            {
+              "entryId": "node_alert:alert-1",
+              "projectionType": "node_alert",
+              "state": {
+                "alertId": "alert-1",
+                "status": "open",
+                "currentState": {
+                  "status": "open",
+                  "alertId": "alert-1"
+                }
+              },
+              "kind": "state"
+            },
+            {
+              "entryId": "run:run-001",
+              "projectionType": "run",
+              "state": {
+                "missionId": "mission-a",
+                "runId": "run-001",
+                "currentState": {
+                  "attempt": 2,
+                  "step": "compile",
+                  "sessions": [
+                    {
+                      "status": "running",
+                      "sessionId": "session-1"
+                    }
+                  ],
+                  "tasks": [
+                    {
+                      "taskId": "task-1",
+                      "status": "running"
+                    }
+                  ],
+                  "gates": [
+                    {
+                      "gateId": "gate-1",
+                      "status": "completed"
+                    }
+                  ]
+                },
+                "status": "running",
+                "organizationId": "org-a",
+                "owner": "command",
+                "commandId": "cmd-run-run-001"
+              },
+              "kind": "state"
+            },
+            {
+              "entryId": "run:run-002",
+              "projectionType": "run",
+              "state": {
+                "missionId": "mission-b",
+                "runId": "run-002",
+                "currentState": {
+                  "sessions": [],
+                  "step": "queued",
+                  "tasks": [],
+                  "gates": []
+                },
+                "status": "accepted",
+                "organizationId": "org-a",
+                "owner": "command",
+                "commandId": "cmd-run-run-002"
+              },
+              "kind": "state"
+            },
+            {
+              "entryId": "run:run-003",
+              "projectionType": "run",
+              "removedAtSequence": 52,
+              "kind": "removed",
+              "runId": "run-003"
+            },
+            {
+              "entryId": "session:session-1",
+              "projectionType": "session",
+              "state": {
+                "runId": "run-001",
+                "status": "running",
+                "sessionId": "session-1",
+                "currentState": {
+                  "organizationId": "org-a",
+                  "status": "running",
+                  "runId": "run-001",
+                  "sessionId": "session-1"
+                },
+                "organizationId": "org-a"
+              },
+              "kind": "state"
+            },
+            {
+              "entryId": "task:task-1",
+              "projectionType": "task",
+              "state": {
+                "taskId": "task-1",
+                "runId": "run-001",
+                "status": "running",
+                "currentState": {
+                  "organizationId": "org-a",
+                  "taskId": "task-1",
+                  "status": "running",
+                  "runId": "run-001"
+                },
+                "organizationId": "org-a"
+              },
+              "kind": "state"
+            }
+          ],
+          "snapshotId": "snapshot-7",
+          "pageCount": 2,
+          "pageToken": "opaque-page-1",
+          "highWaterSequence": 57,
+          "organizationId": "org-a",
+          "pageIndex": 1,
+          "entryCount": 13,
+          "checkpointId": "checkpoint-7",
+          "projectionCoverage": [
+            "approval",
+            "artifact",
+            "command",
+            "gate",
+            "harness",
+            "limit",
+            "node",
+            "node_alert",
+            "run",
+            "session",
+            "task"
+          ],
+          "requestedAfterSequence": 40,
+          "schemaVersion": "v1"
+        }
+      ],
+      [
+        {
+          "organizationId": "org-a",
+          "projectionCoverage": [
+            "approval",
+            "artifact",
+            "command",
+            "gate",
+            "harness",
+            "limit",
+            "node",
+            "node_alert",
+            "run",
+            "session",
+            "task"
+          ],
+          "highWaterSequence": 0,
+          "pageIndex": 0,
+          "pageCount": 1,
+          "schemaVersion": "v1",
+          "entryCount": 0,
+          "entries": [],
+          "snapshotId": "snapshot-empty",
+          "nodeId": "node-empty",
+          "checkpointId": "checkpoint-empty",
+          "requestedAfterSequence": 0
+        }
+      ]
+    ],
+    "invalid": [
+      {
+        "pages": [
+          {
+            "snapshotId": "s",
+            "entries": [],
+            "entryCount": 0,
+            "highWaterSequence": 8,
+            "schemaVersion": "v1",
+            "requestedAfterSequence": 9,
+            "pageIndex": 0,
+            "projectionCoverage": [
+              "approval",
+              "artifact",
+              "command",
+              "gate",
+              "harness",
+              "limit",
+              "node",
+              "node_alert",
+              "run",
+              "session",
+              "task"
+            ],
+            "pageCount": 1,
+            "checkpointId": "c",
+            "nodeId": "node-a",
+            "organizationId": "org-a"
+          }
+        ],
+        "expectedError": "checkpoint high-water precedes requested cursor"
+      },
+      {
+        "pages": [
+          {
+            "requestedAfterSequence": 4,
+            "checkpointId": "c",
+            "organizationId": "org-a",
+            "schemaVersion": "v1",
+            "nodeId": "node-a",
+            "snapshotId": "s",
+            "pageCount": 2,
+            "pageIndex": 0,
+            "entryCount": 0,
+            "projectionCoverage": [
+              "approval",
+              "artifact",
+              "command",
+              "gate",
+              "harness",
+              "limit",
+              "node",
+              "node_alert",
+              "run",
+              "session",
+              "task"
+            ],
+            "nextPageToken": "p",
+            "entries": [],
+            "highWaterSequence": 8
+          },
+          {
+            "snapshotId": "s",
+            "entries": [],
+            "entryCount": 0,
+            "highWaterSequence": 9,
+            "schemaVersion": "v1",
+            "requestedAfterSequence": 4,
+            "pageIndex": 1,
+            "projectionCoverage": [
+              "approval",
+              "artifact",
+              "command",
+              "gate",
+              "harness",
+              "limit",
+              "node",
+              "node_alert",
+              "run",
+              "session",
+              "task"
+            ],
+            "pageToken": "p",
+            "pageCount": 2,
+            "checkpointId": "c",
+            "nodeId": "node-a",
+            "organizationId": "org-a"
+          }
+        ],
+        "expectedError": "inconsistent high-water across pages"
+      },
+      {
+        "pages": [
+          {
+            "snapshotId": "s",
+            "entries": [],
+            "entryCount": 0,
+            "highWaterSequence": 8,
+            "schemaVersion": "v1",
+            "requestedAfterSequence": 4,
+            "pageIndex": 0,
+            "projectionCoverage": [
+              "approval",
+              "artifact",
+              "command",
+              "gate",
+              "harness",
+              "limit",
+              "node",
+              "node_alert",
+              "run",
+              "session",
+              "task"
+            ],
+            "pageCount": 2,
+            "checkpointId": "c",
+            "nodeId": "node-a",
+            "organizationId": "org-a"
+          }
+        ],
+        "expectedError": "missing terminal page"
+      },
+      {
+        "pages": [
+          {
+            "snapshotId": "s",
+            "entries": [],
+            "entryCount": 1,
+            "highWaterSequence": 8,
+            "schemaVersion": "v1",
+            "requestedAfterSequence": 4,
+            "pageIndex": 0,
+            "projectionCoverage": [
+              "approval",
+              "artifact",
+              "command",
+              "gate",
+              "harness",
+              "limit",
+              "node",
+              "node_alert",
+              "run",
+              "session",
+              "task"
+            ],
+            "pageCount": 1,
+            "checkpointId": "c",
+            "nodeId": "node-a",
+            "organizationId": "org-a"
+          }
+        ],
+        "expectedError": "entry count does not match manifest"
+      },
+      {
+        "pages": [
+          {
+            "snapshotId": "s",
+            "entries": [
+              {
+                "entryId": "run-z",
+                "projectionType": "run",
+                "removedAtSequence": 8,
+                "kind": "removed"
+              },
+              {
+                "entryId": "run-z",
+                "projectionType": "run",
+                "removedAtSequence": 8,
+                "kind": "removed"
+              }
+            ],
+            "entryCount": 2,
+            "highWaterSequence": 8,
+            "schemaVersion": "v1",
+            "requestedAfterSequence": 4,
+            "pageIndex": 0,
+            "projectionCoverage": [
+              "approval",
+              "artifact",
+              "command",
+              "gate",
+              "harness",
+              "limit",
+              "node",
+              "node_alert",
+              "run",
+              "session",
+              "task"
+            ],
+            "pageCount": 1,
+            "checkpointId": "c",
+            "nodeId": "node-a",
+            "organizationId": "org-a"
+          }
+        ],
+        "expectedError": "duplicate or unordered entries"
+      },
+      {
+        "pages": [
+          {
+            "snapshotId": "s",
+            "entries": [],
+            "entryCount": 0,
+            "highWaterSequence": 8,
+            "schemaVersion": "v1",
+            "requestedAfterSequence": 4,
+            "pageIndex": 1,
+            "projectionCoverage": [
+              "approval",
+              "artifact",
+              "command",
+              "gate",
+              "harness",
+              "limit",
+              "node",
+              "node_alert",
+              "run",
+              "session",
+              "task"
+            ],
+            "pageCount": 1,
+            "checkpointId": "c",
+            "nodeId": "node-a",
+            "organizationId": "org-a"
+          }
+        ],
+        "expectedError": "pageIndex must be less than pageCount"
+      },
+      {
+        "pages": [
+          {
+            "snapshotId": "s",
+            "entries": [],
+            "entryCount": 0,
+            "highWaterSequence": 8,
+            "schemaVersion": "v1",
+            "requestedAfterSequence": 4,
+            "pageIndex": 0,
+            "projectionCoverage": [
+              "run"
+            ],
+            "pageCount": 1,
+            "checkpointId": "c",
+            "nodeId": "node-a",
+            "organizationId": "org-a"
+          }
+        ],
+        "expectedError": "projection coverage is incomplete"
+      },
+      {
+        "pages": [
+          {
+            "snapshotId": "s",
+            "entries": [],
+            "entryCount": 0,
+            "highWaterSequence": 8,
+            "schemaVersion": "v1",
+            "requestedAfterSequence": 4,
+            "pageIndex": 0,
+            "projectionCoverage": [
+              "approval",
+              "artifact",
+              "command",
+              "gate",
+              "harness",
+              "limit",
+              "node",
+              "node_alert",
+              "run",
+              "session",
+              "task"
+            ],
+            "nextPageToken": "p1",
+            "pageCount": 2,
+            "checkpointId": "c",
+            "nodeId": "node-a",
+            "organizationId": "org-a"
+          },
+          {
+            "snapshotId": "s",
+            "entries": [],
+            "entryCount": 0,
+            "highWaterSequence": 8,
+            "schemaVersion": "v1",
+            "requestedAfterSequence": 4,
+            "pageIndex": 1,
+            "projectionCoverage": [
+              "approval",
+              "artifact",
+              "command",
+              "gate",
+              "harness",
+              "limit",
+              "node",
+              "node_alert",
+              "run",
+              "session",
+              "task"
+            ],
+            "pageToken": "different",
+            "pageCount": 2,
+            "checkpointId": "c",
+            "nodeId": "node-a",
+            "organizationId": "org-a"
+          }
+        ],
+        "expectedError": "page-token chain mismatch"
+      },
+      {
+        "pages": [
+          {
+            "nodeId": "node-a",
+            "snapshotId": "s",
+            "schemaVersion": "v1",
+            "entries": [
+              {
+                "runId": "run-b",
+                "kind": "removed",
+                "entryId": "run:run-a",
+                "projectionType": "run",
+                "removedAtSequence": 8
+              }
+            ],
+            "checkpointId": "c",
+            "highWaterSequence": 8,
+            "projectionCoverage": [
+              "approval",
+              "artifact",
+              "command",
+              "gate",
+              "harness",
+              "limit",
+              "node",
+              "node_alert",
+              "run",
+              "session",
+              "task"
+            ],
+            "pageCount": 1,
+            "entryCount": 1,
+            "pageIndex": 0,
+            "organizationId": "org-a",
+            "requestedAfterSequence": 4
+          }
+        ],
+        "expectedError": "run tombstone runId does not match entryId"
+      }
+    ]
+  },
+  "checkpointAck": {
+    "valid": {
+      "checkpointId": "checkpoint-7",
+      "throughSequence": 57,
+      "requestedAfterSequence": 40,
+      "allPagesServed": true,
+      "scopeMatches": true
+    },
+    "invalid": [
+      {
+        "expectedError": "ACK advances beyond checkpoint high-water",
+        "checkpointId": "checkpoint-7",
+        "throughSequence": 58,
+        "highWaterSequence": 57,
+        "requestedAfterSequence": 40,
+        "allPagesServed": true,
+        "scopeMatches": true
+      },
+      {
+        "expectedError": "ACK before all pages were served",
+        "checkpointId": "checkpoint-7",
+        "throughSequence": 57,
+        "highWaterSequence": 57,
+        "requestedAfterSequence": 40,
+        "allPagesServed": false,
+        "scopeMatches": true
+      },
+      {
+        "expectedError": "checkpoint scope mismatch",
+        "checkpointId": "checkpoint-7",
+        "throughSequence": 57,
+        "highWaterSequence": 57,
+        "requestedAfterSequence": 40,
+        "allPagesServed": true,
+        "scopeMatches": false
+      }
+    ],
+    "requests": {
+      "invalid": [
+        {
+          "params": {
+            "commandId": "ack-bad",
+            "nodeId": "node-a",
+            "protocolVersion": "v1",
+            "occurredAt": "2026-11-04T22:01:00Z",
+            "organizationId": "org-a",
+            "throughSequence": 57,
+            "messageId": "msg-bad-ack",
+            "acknowledgementType": "snapshot_checkpoint"
+          },
+          "id": "bad-ack",
+          "expectedError": "checkpoint ack missing checkpointId",
+          "jsonrpc": "2.0",
+          "method": "node.events.ack"
+        },
+        {
+          "params": {
+            "throughSequence": 57,
+            "checkpointId": "",
+            "organizationId": "org-a",
+            "nodeId": "node-a",
+            "protocolVersion": "v1",
+            "messageId": "msg-empty-ack",
+            "commandId": "ack-empty",
+            "occurredAt": "2026-11-04T22:01:00Z",
+            "acknowledgementType": "snapshot_checkpoint"
+          },
+          "id": "empty-ack",
+          "expectedError": "checkpoint ack has empty checkpointId",
+          "jsonrpc": "2.0",
+          "method": "node.events.ack"
+        },
+        {
+          "params": {
+            "messageId": "msg-type-ack",
+            "commandId": "ack-type",
+            "organizationId": "org-a",
+            "occurredAt": "2026-11-04T22:01:00Z",
+            "checkpointId": "checkpoint-7",
+            "protocolVersion": "v1",
+            "throughSequence": 57,
+            "nodeId": "node-a"
+          },
+          "id": "bad-type-ack",
+          "jsonrpc": "2.0",
+          "method": "node.events.ack",
+          "expectedError": "checkpointId without checkpoint ACK type"
+        }
+      ],
+      "valid": [
+        {
+          "params": {
+            "throughSequence": 57,
+            "checkpointId": "checkpoint-7",
+            "organizationId": "org-a",
+            "nodeId": "node-a",
+            "protocolVersion": "v1",
+            "messageId": "msg-ack",
+            "commandId": "ack-7",
+            "occurredAt": "2026-11-04T22:01:00Z",
+            "acknowledgementType": "snapshot_checkpoint"
+          },
+          "id": "snapshot-ack",
+          "jsonrpc": "2.0",
+          "method": "node.events.ack"
+        }
+      ]
+    }
+  },
+  "retry": {
+    "sameCheckpointId": "checkpoint-7",
+    "sameRequestCommandId": "cmd-page-0",
+    "samePageToken": "opaque-page-1",
+    "mustReturnSameSnapshotId": "snapshot-7",
+    "mustReturnSamePageContent": true,
+    "changedStartingCursorRequiresNewCheckpointId": true,
+    "snapshotExpirySeconds": 900
+  },
+  "negotiation": {
+    "nodeOffer": [
+      "node.event_replay.v1",
+      "node.snapshot_checkpoint.v1"
+    ],
+    "commandAccepted": [
+      "node.event_replay.v1",
+      "node.snapshot_checkpoint.v1"
+    ],
+    "legacyNodeOffer": [
+      "node.event_replay.v1"
+    ],
+    "legacyCommandAccepted": [
+      "node.event_replay.v1"
+    ],
+    "snapshotEnabled": true,
+    "legacySnapshotEnabled": false,
+    "noReplayCapability": {
+      "nodeOffer": [
+        "node.snapshot_checkpoint.v1"
+      ],
+      "snapshotEnabled": false,
+      "commandAccepted": [
+        "node.snapshot_checkpoint.v1"
+      ]
+    }
+  },
+  "concurrentEvents": {
+    "valid": {
+      "eventBeforeCapture": 56,
+      "highWaterSequence": 57,
+      "stateReflectsThroughSequence": 57,
+      "eventAfterCapture": 58,
+      "firstReplaySequence": 58
+    },
+    "invalid": [
+      {
+        "expectedError": "snapshot omits event at or below high-water",
+        "highWaterSequence": 57,
+        "stateReflectsThroughSequence": 56,
+        "firstReplaySequence": 58
+      },
+      {
+        "expectedError": "replay starts after an uncovered sequence",
+        "highWaterSequence": 57,
+        "stateReflectsThroughSequence": 57,
+        "firstReplaySequence": 59
+      }
+    ]
+  },
+  "failures": {
+    "valid": [
+      {
+        "checkpointId": "checkpoint-fixture",
+        "retryable": true,
+        "code": "snapshot_unavailable"
+      },
+      {
+        "checkpointId": "checkpoint-fixture",
+        "retryable": true,
+        "code": "snapshot_expired"
+      },
+      {
+        "checkpointId": "checkpoint-fixture",
+        "retryable": false,
+        "code": "snapshot_too_large"
+      },
+      {
+        "checkpointId": "checkpoint-fixture",
+        "retryable": false,
+        "code": "snapshot_entry_too_large"
+      },
+      {
+        "checkpointId": "checkpoint-fixture",
+        "retryable": false,
+        "code": "checkpoint_conflict"
+      },
+      {
+        "checkpointId": "checkpoint-fixture",
+        "retryable": false,
+        "code": "stale_checkpoint"
+      },
+      {
+        "checkpointId": "checkpoint-fixture",
+        "retryable": false,
+        "code": "checkpoint_coverage_incomplete"
+      },
+      {
+        "checkpointId": "checkpoint-fixture",
+        "retryable": true,
+        "code": "checkpoint_incomplete"
+      },
+      {
+        "checkpointId": "checkpoint-fixture",
+        "retryable": false,
+        "code": "checkpoint_scope_mismatch"
+      },
+      {
+        "checkpointId": "checkpoint-fixture",
+        "retryable": false,
+        "code": "checkpoint_sequence_mismatch"
+      }
+    ],
+    "invalid": [
+      {
+        "expectedError": "failure omits retry policy",
+        "checkpointId": "checkpoint-old",
+        "code": "snapshot_expired"
+      },
+      {
+        "expectedError": "unknown failure code",
+        "checkpointId": "checkpoint-old",
+        "retryable": false,
+        "code": "unknown"
+      },
+      {
+        "expectedError": "retry policy contradicts code",
+        "checkpointId": "c",
+        "retryable": true,
+        "code": "snapshot_too_large"
+      }
+    ]
+  },
+  "limits": {
+    "maxEntriesPerPage": 100,
+    "maxPageBytes": 1048576,
+    "maxEntries": 10000,
+    "maxSnapshotBytes": 67108864,
+    "snapshotExpirySeconds": 900
+  },
+  "tombstones": {
+    "invalid": [
+      {
+        "expectedError": "tombstone compacted before minimum retention",
+        "minimumRetentionSeconds": 900,
+        "compactedAfterSeconds": 899
+      },
+      {
+        "pinnedSnapshot": true,
+        "expectedError": "pinned snapshot page chain mutated during compaction",
+        "compactedCopyChanged": true
+      },
+      {
+        "included": true,
+        "expectedError": "tombstone included at or before already accepted cursor",
+        "removedAtSequence": 52,
+        "requestedAfterSequence": 52
+      }
+    ],
+    "valid": {
+      "removedAtSequence": 52,
+      "highWaterSequence": 57,
+      "minimumRetentionSeconds": 900,
+      "pinnedSnapshotRetainsCopy": true,
+      "requestedAfterSequence": 40,
+      "mustInclude": true
+    },
+    "compaction": {
+      "omissionRemovesPreviouslyProjectedKey": true,
+      "mayCompactWhenNoPinnedSnapshot": true,
+      "minimumRetentionSeconds": 900,
+      "fullInventoryAuthoritative": true
+    }
+  },
+  "scope": {
+    "excludedLocalOnlyRun": {
+      "runId": "local-001",
+      "included": false,
+      "organizationId": null,
+      "commandId": null,
+      "owner": "node"
+    },
+    "includedRun": {
+      "runId": "run-001",
+      "included": true,
+      "organizationId": "org-a",
+      "commandId": "cmd-run-001",
+      "owner": "command"
+    },
+    "authenticatedOrganizationId": "org-a"
+  },
+  "staleCheckpoint": {
+    "invalid": [
+      {
+        "requestedAfterSequence": 39,
+        "beginAccepted": false,
+        "expectedError": "snapshot cursor differs from node last accepted ACK",
+        "lastAcceptedAck": 40
+      },
+      {
+        "requestedAfterSequence": 40,
+        "ackAccepted": false,
+        "lastAcceptedAckAtStart": 40,
+        "expectedError": "last ACK advanced while pages were read",
+        "lastAcceptedAckAtAck": 41
+      }
+    ],
+    "valid": {
+      "requestedAfterSequence": 40,
+      "beginAccepted": true,
+      "lastAcceptedAck": 40
+    }
+  }
+}

@@ -53,6 +53,118 @@ fn replay_result_fixtures_enforce_cursor_recovery_invariants() {
 }
 
 #[test]
+fn node_snapshot_fixtures_enforce_complete_checkpoint_pages_and_ack_safety() {
+    let fixtures = read("fixtures/v1/node-snapshot.json");
+    for request in fixtures["requests"]["valid"].as_array().unwrap() {
+        auxp::validate(request).unwrap();
+    }
+    for request in fixtures["requests"]["invalid"].as_array().unwrap() {
+        assert!(
+            auxp::validate(request).is_err(),
+            "{}",
+            request["expectedError"]
+        );
+    }
+    for request in fixtures["checkpointAck"]["requests"]["valid"]
+        .as_array()
+        .unwrap()
+    {
+        auxp::validate(request).unwrap();
+    }
+    for request in fixtures["checkpointAck"]["requests"]["invalid"]
+        .as_array()
+        .unwrap()
+    {
+        assert!(
+            auxp::validate(request).is_err(),
+            "{}",
+            request["expectedError"]
+        );
+    }
+
+    let mut first_valid_chain = None;
+    for pages in fixtures["pages"]["valid"].as_array().unwrap() {
+        let encoded: Vec<Vec<u8>> = pages
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(serde_json::to_vec)
+            .collect::<Result<_, _>>()
+            .unwrap();
+        let refs: Vec<&[u8]> = encoded.iter().map(Vec::as_slice).collect();
+        let validated = auxp::snapshot::validate_page_chain(&refs).unwrap_or_else(|error| {
+            panic!("valid checkpoint page chain refused: {error}: {pages}")
+        });
+        if first_valid_chain.is_none() {
+            first_valid_chain = Some(validated);
+        }
+    }
+    for invalid in fixtures["pages"]["invalid"].as_array().unwrap() {
+        let encoded: Vec<Vec<u8>> = invalid["pages"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(serde_json::to_vec)
+            .collect::<Result<_, _>>()
+            .unwrap();
+        let refs: Vec<&[u8]> = encoded.iter().map(Vec::as_slice).collect();
+        assert!(
+            auxp::snapshot::validate_page_chain(&refs).is_err(),
+            "{}",
+            invalid["expectedError"]
+        );
+    }
+
+    let valid_ack = &fixtures["checkpointAck"]["valid"];
+    assert_eq!(valid_ack["throughSequence"], 57);
+    assert_eq!(valid_ack["allPagesServed"], true);
+    assert_eq!(valid_ack["scopeMatches"], true);
+    for ack in fixtures["checkpointAck"]["invalid"].as_array().unwrap() {
+        assert!(
+            ack["throughSequence"] != ack["highWaterSequence"]
+                || ack["allPagesServed"] != true
+                || ack["scopeMatches"] != true,
+            "{}",
+            ack["expectedError"]
+        );
+    }
+    let chain = first_valid_chain.unwrap();
+    chain
+        .validate_checkpoint_ack("org-a", "node-a", "checkpoint-7", 57, 40)
+        .unwrap();
+    assert!(
+        chain
+            .validate_checkpoint_ack("org-other", "node-a", "checkpoint-7", 57, 40)
+            .is_err()
+    );
+    assert!(
+        chain
+            .validate_checkpoint_ack("org-a", "node-a", "wrong-checkpoint", 57, 40)
+            .is_err()
+    );
+    assert!(
+        chain
+            .validate_checkpoint_ack("org-a", "node-a", "checkpoint-7", 58, 40)
+            .is_err()
+    );
+    assert!(
+        chain
+            .validate_checkpoint_ack("org-a", "node-a", "checkpoint-7", 57, 39)
+            .is_err()
+    );
+
+    let empty_page = serde_json::to_vec(&fixtures["pages"]["valid"][1][0]).unwrap();
+    let mut oversized_page = empty_page;
+    oversized_page.resize(auxp::snapshot::MAX_PAGE_BYTES + 1, b' ');
+    assert!(auxp::snapshot::validate_page_chain(&[&oversized_page]).is_err());
+
+    let mut max_sized_page = serde_json::to_vec(&fixtures["pages"]["valid"][1][0]).unwrap();
+    max_sized_page.resize(auxp::snapshot::MAX_PAGE_BYTES, b' ');
+    let over_total: Vec<&[u8]> = vec![max_sized_page.as_slice(); 65];
+    assert!(auxp::snapshot::validate_page_chain(&over_total).is_err());
+}
+
+#[test]
 fn every_activity_variant_has_a_valid_fixture_and_a_rust_type() {
     let schema = read("schemas/v1/execution-activity.schema.json");
     let declared: BTreeSet<&str> = schema["$defs"]["activity"]["properties"]["type"]["enum"]

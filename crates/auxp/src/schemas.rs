@@ -9,6 +9,8 @@ pub const MESSAGES: &str = include_str!("../../../schemas/v1/messages.schema.jso
 /// Typed execution activity (`execution.activity.v1` capability).
 pub const EXECUTION_ACTIVITY: &str =
     include_str!("../../../schemas/v1/execution-activity.schema.json");
+/// Atomic node-wide snapshot pages (`node.snapshot_checkpoint.v1`).
+pub const NODE_SNAPSHOT: &str = include_str!("../../../schemas/v1/node-snapshot.schema.json");
 /// Enrollment tokens, redemption and its answers.
 pub const ENROLLMENT: &str = include_str!("../../../schemas/v1/enrollment.schema.json");
 /// The Office projection (`office-projection.v1`).
@@ -28,6 +30,7 @@ mod tests {
             ENVELOPE,
             MESSAGES,
             EXECUTION_ACTIVITY,
+            NODE_SNAPSHOT,
             ENROLLMENT,
             OFFICE_PROJECTION,
             APPROVAL_RESOLUTION,
@@ -39,5 +42,10 @@ mod tests {
                     .is_some_and(|id| id.ends_with(".schema.json"))
             );
         }
+        let messages: serde_json::Value = serde_json::from_str(MESSAGES).unwrap();
+        assert_eq!(
+            messages["$defs"]["nodeSnapshotResult"]["$ref"],
+            "node-snapshot.schema.json#/$defs/page"
+        );
     }
 }

@@ -120,6 +120,32 @@ pub fn validate(message: &Value) -> Result<(), String> {
             {
                 return Err("throughSequence must be a non-negative integer".into());
             }
+            match text("acknowledgementType") {
+                "" | "events" if params.get("checkpointId").is_none() => {}
+                "snapshot_checkpoint"
+                    if !text("checkpointId").is_empty()
+                        && text("checkpointId").chars().count() <= 128 => {}
+                _ => return Err("node.events.ack checkpoint binding is invalid".into()),
+            }
+        }
+        "node.snapshot" => {
+            if params
+                .get("requestedAfterSequence")
+                .and_then(Value::as_i64)
+                .is_none_or(|s| s < 0)
+            {
+                return Err("requestedAfterSequence must be a non-negative integer".into());
+            }
+            if params
+                .get("pageSize")
+                .and_then(Value::as_i64)
+                .is_none_or(|s| !(1..=100).contains(&s))
+            {
+                return Err("pageSize must be between 1 and 100".into());
+            }
+            if text("checkpointId").is_empty() || text("checkpointId").chars().count() > 128 {
+                return Err("checkpointId must be at most 128 characters".into());
+            }
         }
         "harness.status" if params.get("harnesses").is_none_or(Value::is_null) => {
             return Err("harness.status requires harnesses".into());
@@ -221,6 +247,16 @@ pub struct Params {
     pub last_acknowledged_sequence: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub through_sequence: Option<i64>,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub checkpoint_id: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub acknowledgement_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub requested_after_sequence: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub page_size: Option<i64>,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub page_token: String,
     #[serde(skip_serializing_if = "String::is_empty")]
     pub run_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
