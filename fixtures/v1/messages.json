@@ -33,7 +33,11 @@
         "sequence": 4,
         "runId": "run-01",
         "state": "testing",
-        "agentIsolation": {"mode": "bubblewrap", "network": "outbound", "source": "command"}
+        "agentIsolation": {
+          "mode": "bubblewrap",
+          "network": "outbound",
+          "source": "command"
+        }
       }
     },
     {
@@ -48,7 +52,11 @@
         "eventId": "evt-02",
         "sequence": 5,
         "runId": "run-01",
-        "agentIsolation": {"mode": "bubblewrap", "network": "none", "source": "node-policy"}
+        "agentIsolation": {
+          "mode": "bubblewrap",
+          "network": "none",
+          "source": "node-policy"
+        }
       }
     },
     {
@@ -63,7 +71,10 @@
         "eventId": "evt-03",
         "sequence": 6,
         "runId": "run-02",
-        "agentIsolation": {"mode": "none", "source": "default"}
+        "agentIsolation": {
+          "mode": "none",
+          "source": "default"
+        }
       }
     },
     {
@@ -682,6 +693,110 @@
         "commandId": "cmd-ack-1",
         "throughSequence": 39
       }
+    },
+    {
+      "method": "node.status_changed",
+      "params": {
+        "occurredAt": "2026-11-05T12:00:00Z",
+        "protocolVersion": "v1",
+        "sequence": 101,
+        "node": {
+          "capacity": {
+            "slots": 2
+          },
+          "nodeId": "node-01",
+          "status": "ready"
+        },
+        "organizationId": "org-demo",
+        "messageId": "msg-node-status",
+        "eventId": "evt-node-status",
+        "nodeId": "node-01"
+      },
+      "jsonrpc": "2.0"
+    },
+    {
+      "method": "node.alert",
+      "params": {
+        "occurredAt": "2026-11-05T12:00:00Z",
+        "alert": {
+          "alert": {
+            "code": "harness_unavailable",
+            "status": "active",
+            "firstObservedAt": "2026-11-05T12:00:00Z",
+            "producer": "harness-monitor",
+            "alertId": "alert-1",
+            "conditionKey": "harness:claude",
+            "lastObservedAt": "2026-11-05T12:00:00Z",
+            "summary": "Claude harness is unavailable."
+          },
+          "kind": "state"
+        },
+        "protocolVersion": "v1",
+        "sequence": 102,
+        "organizationId": "org-demo",
+        "messageId": "msg-alert",
+        "eventId": "evt-alert",
+        "nodeId": "node-01"
+      },
+      "jsonrpc": "2.0"
+    },
+    {
+      "method": "node.alert",
+      "params": {
+        "occurredAt": "2026-11-05T12:00:00Z",
+        "alert": {
+          "alert": {
+            "code": "harness_unavailable",
+            "status": "resolved",
+            "firstObservedAt": "2026-11-05T12:00:00Z",
+            "producer": "harness-monitor",
+            "alertId": "alert-1",
+            "conditionKey": "harness:claude",
+            "lastObservedAt": "2026-11-05T12:04:00Z",
+            "summary": "Claude harness is available again."
+          },
+          "kind": "state"
+        },
+        "protocolVersion": "v1",
+        "sequence": 103,
+        "organizationId": "org-demo",
+        "messageId": "msg-alert-resolved",
+        "eventId": "evt-alert-resolved",
+        "nodeId": "node-01"
+      },
+      "jsonrpc": "2.0"
+    },
+    {
+      "method": "node.alert",
+      "params": {
+        "occurredAt": "2026-11-05T12:00:00Z",
+        "alert": {
+          "alertId": "alert-1",
+          "kind": "removed"
+        },
+        "protocolVersion": "v1",
+        "sequence": 104,
+        "organizationId": "org-demo",
+        "messageId": "msg-alert-removed",
+        "eventId": "evt-alert-removed",
+        "nodeId": "node-01"
+      },
+      "jsonrpc": "2.0"
+    },
+    {
+      "method": "node.heartbeat",
+      "params": {
+        "occurredAt": "2026-11-05T12:00:00Z",
+        "protocolVersion": "v1",
+        "status": "ready",
+        "capacity": {
+          "slots": 2
+        },
+        "organizationId": "org-demo",
+        "messageId": "msg-heartbeat",
+        "nodeId": "node-01"
+      },
+      "jsonrpc": "2.0"
     }
   ],
   "invalid": [
@@ -713,7 +828,11 @@
         "eventId": "evt-bad-isolation",
         "sequence": 7,
         "runId": "run-02",
-        "agentIsolation": {"mode": "none", "network": "outbound", "source": "default"}
+        "agentIsolation": {
+          "mode": "none",
+          "network": "outbound",
+          "source": "default"
+        }
       },
       "expectedError": "host execution cannot declare sandbox network policy"
     },
@@ -864,6 +983,218 @@
         }
       },
       "expectedError": "task_created without taskName"
+    },
+    {
+      "method": "node.status_changed",
+      "params": {
+        "occurredAt": "2026-11-05T12:00:00Z",
+        "protocolVersion": "v1",
+        "sequence": 105,
+        "node": {
+          "status": "ready",
+          "nodeId": "node-01"
+        },
+        "organizationId": "org-demo",
+        "messageId": "msg-status-no-capacity",
+        "eventId": "evt-bad",
+        "nodeId": "node-01"
+      },
+      "jsonrpc": "2.0",
+      "expectedError": "node status missing capacity"
+    },
+    {
+      "method": "node.status_changed",
+      "params": {
+        "occurredAt": "2026-11-05T12:00:00Z",
+        "protocolVersion": "v1",
+        "sequence": 106,
+        "node": {
+          "capacity": {},
+          "nodeId": "node-other",
+          "status": "ready"
+        },
+        "organizationId": "org-demo",
+        "messageId": "msg-status-id-mismatch",
+        "eventId": "evt-bad",
+        "nodeId": "node-01"
+      },
+      "jsonrpc": "2.0",
+      "expectedError": "node identity mismatch"
+    },
+    {
+      "method": "node.status_changed",
+      "params": {
+        "occurredAt": "2026-11-05T12:00:00Z",
+        "protocolVersion": "v1",
+        "sequence": 107,
+        "node": {
+          "capacity": {},
+          "nodeId": "node-01",
+          "status": "offline"
+        },
+        "organizationId": "org-demo",
+        "messageId": "msg-status-offline",
+        "eventId": "evt-bad",
+        "nodeId": "node-01"
+      },
+      "jsonrpc": "2.0",
+      "expectedError": "offline is not operational status"
+    },
+    {
+      "method": "node.heartbeat",
+      "params": {
+        "occurredAt": "2026-11-05T12:00:00Z",
+        "status": "ready",
+        "protocolVersion": "v1",
+        "sequence": 1,
+        "capacity": {},
+        "organizationId": "org-demo",
+        "messageId": "msg-heartbeat-sequence",
+        "nodeId": "node-01"
+      },
+      "jsonrpc": "2.0",
+      "expectedError": "heartbeat has sequence"
+    },
+    {
+      "method": "node.alert",
+      "params": {
+        "occurredAt": "2026-11-05T12:00:00Z",
+        "alert": {
+          "alert": {
+            "code": "harness_unavailable",
+            "status": "open",
+            "firstObservedAt": "2026-11-05T12:00:00Z",
+            "producer": "harness-monitor",
+            "alertId": "alert-1",
+            "conditionKey": "harness:claude",
+            "lastObservedAt": "2026-11-05T12:00:00Z",
+            "summary": "Claude harness is unavailable."
+          },
+          "kind": "state"
+        },
+        "protocolVersion": "v1",
+        "sequence": 108,
+        "organizationId": "org-demo",
+        "messageId": "msg-alert-open",
+        "eventId": "evt-bad",
+        "nodeId": "node-01"
+      },
+      "jsonrpc": "2.0",
+      "expectedError": "invalid alert lifecycle status"
+    },
+    {
+      "method": "node.alert",
+      "params": {
+        "occurredAt": "2026-11-05T12:00:00Z",
+        "alert": {
+          "kind": "removed"
+        },
+        "protocolVersion": "v1",
+        "sequence": 109,
+        "organizationId": "org-demo",
+        "messageId": "msg-alert-remove-bad",
+        "eventId": "evt-bad",
+        "nodeId": "node-01"
+      },
+      "jsonrpc": "2.0",
+      "expectedError": "removal missing alertId"
+    },
+    {
+      "method": "node.alert",
+      "params": {
+        "occurredAt": "2026-11-05T12:00:00Z",
+        "alert": {
+          "alert": {
+            "code": "harness_unavailable",
+            "status": "active",
+            "firstObservedAt": "2026-11-05T12:00:00Z",
+            "producer": "harness-monitor",
+            "alertId": "alert-1",
+            "conditionKey": "harness:claude",
+            "lastObservedAt": "2026-11-05T12:00:00Z",
+            "summary": "   "
+          },
+          "kind": "state"
+        },
+        "protocolVersion": "v1",
+        "sequence": 110,
+        "organizationId": "org-demo",
+        "messageId": "msg-alert-empty-summary",
+        "eventId": "evt-bad",
+        "nodeId": "node-01"
+      },
+      "jsonrpc": "2.0",
+      "expectedError": "empty alert summary"
+    },
+    {
+      "method": "node.alert",
+      "params": {
+        "occurredAt": "2026-11-05T12:00:00Z",
+        "alert": {
+          "alert": {
+            "code": "harness_unavailable",
+            "status": "active",
+            "firstObservedAt": "2026-11-05T12:00:00Z",
+            "producer": "harness-monitor",
+            "alertId": "alert-1",
+            "conditionKey": "harness:claude",
+            "lastObservedAt": "2026-11-05T12:00:00Z",
+            "summary": "ééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé"
+          },
+          "kind": "state"
+        },
+        "protocolVersion": "v1",
+        "sequence": 111,
+        "organizationId": "org-demo",
+        "messageId": "msg-alert-long-summary",
+        "eventId": "evt-bad",
+        "nodeId": "node-01"
+      },
+      "jsonrpc": "2.0",
+      "expectedError": "alert summary too long"
+    },
+    {
+      "method": "node.alert",
+      "params": {
+        "occurredAt": "2026-11-05T12:00:00Z",
+        "alert": {
+          "alert": {
+            "apiKey": "secret",
+            "code": "harness_unavailable",
+            "status": "active",
+            "firstObservedAt": "2026-11-05T12:00:00Z",
+            "producer": "harness-monitor",
+            "alertId": "alert-1",
+            "conditionKey": "harness:claude",
+            "lastObservedAt": "2026-11-05T12:00:00Z",
+            "summary": "Claude harness is unavailable."
+          },
+          "kind": "state"
+        },
+        "protocolVersion": "v1",
+        "sequence": 112,
+        "organizationId": "org-demo",
+        "messageId": "msg-alert-secret",
+        "eventId": "evt-bad",
+        "nodeId": "node-01"
+      },
+      "jsonrpc": "2.0",
+      "expectedError": "unknown secret-bearing alert field"
+    },
+    {
+      "method": "node.alert",
+      "params": {
+        "protocolVersion": "v1",
+        "organizationId": "org-demo",
+        "nodeId": "node-01",
+        "messageId": "msg-alert-blank-producer",
+        "occurredAt": "2026-11-05T12:00:00Z",
+        "eventId": "evt-blank-producer",
+        "sequence": 113,
+        "alert": {"kind": "state", "alert": {"alertId": "alert-1", "producer": "   ", "code": "harness_unavailable", "conditionKey": "harness:claude", "summary": "Unavailable", "firstObservedAt": "2026-11-05T12:00:00Z", "lastObservedAt": "2026-11-05T12:00:00Z", "status": "active"}}
+      },
+      "jsonrpc": "2.0",
+      "expectedError": "blank alert producer"
     }
   ]
 }

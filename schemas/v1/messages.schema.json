@@ -26,7 +26,9 @@
         "missionId": {"type": "string", "minLength": 1},
         "runId": {"type": "string", "minLength": 1},
         "sessionId": {"type": "string", "minLength": 1},
-        "activity": {"$ref": "execution-activity.schema.json#/$defs/activity"}
+        "activity": {"$ref": "execution-activity.schema.json#/$defs/activity"},
+        "node": {"$ref": "#/$defs/nodeState"},
+        "alert": {"$ref": "#/$defs/nodeAlertEvent"}
       },
       "additionalProperties": true
     },
@@ -44,6 +46,37 @@
         {"if": {"properties": {"mode": {"const": "none"}}, "required": ["mode"]}, "then": {"not": {"required": ["network"]}}}
       ],
       "additionalProperties": false
+    },
+    "nodeState": {
+      "type": "object",
+      "required": ["nodeId", "status", "capacity"],
+      "properties": {
+        "nodeId": {"type": "string", "minLength": 1, "maxLength": 128},
+        "status": {"enum": ["ready", "draining", "error"]},
+        "capacity": {"type": "object"}
+      },
+      "additionalProperties": false
+    },
+    "nodeAlertState": {
+      "type": "object",
+      "required": ["alertId", "producer", "code", "conditionKey", "summary", "firstObservedAt", "lastObservedAt", "status"],
+      "properties": {
+        "alertId": {"type": "string", "minLength": 1, "pattern": "\\S"},
+        "producer": {"type": "string", "minLength": 1, "pattern": "\\S"},
+        "code": {"type": "string", "minLength": 1, "pattern": "\\S"},
+        "conditionKey": {"type": "string", "minLength": 1, "pattern": "\\S"},
+        "summary": {"type": "string", "minLength": 1, "maxLength": 2000, "pattern": "\\S"},
+        "firstObservedAt": {"type": "string", "format": "date-time"},
+        "lastObservedAt": {"type": "string", "format": "date-time"},
+        "status": {"enum": ["active", "resolved"]}
+      },
+      "additionalProperties": false
+    },
+    "nodeAlertEvent": {
+      "oneOf": [
+        {"type": "object", "required": ["kind", "alert"], "properties": {"kind": {"const": "state"}, "alert": {"$ref": "#/$defs/nodeAlertState"}}, "additionalProperties": false},
+        {"type": "object", "required": ["kind", "alertId"], "properties": {"kind": {"const": "removed"}, "alertId": {"type": "string", "minLength": 1, "pattern": "\\S"}}, "additionalProperties": false}
+      ]
     },
     "resumeResult": {
       "description": "Command invokes node.resume on the node; replayed node notifications are sent to Command on the event channel, never returned in this result.",
@@ -89,7 +122,7 @@
   },
   "oneOf": [
     {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "node.hello"}, "params": {"required": ["capabilities", "agentuxVersion", "supportedProtocolVersions"]}}}]},
-    {"allOf": [{"$ref": "#/$defs/notification"}, {"properties": {"method": {"const": "node.heartbeat"}, "params": {"required": ["status", "capacity"]}}}]},
+    {"allOf": [{"$ref": "#/$defs/notification"}, {"properties": {"method": {"const": "node.heartbeat"}, "params": {"required": ["status", "capacity"], "not": {"anyOf": [{"required": ["eventId"]}, {"required": ["sequence"]}]}}}}]},
     {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "node.resume"}, "params": {"required": ["commandId", "lastAcknowledgedSequence"]}}}]},
     {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "run.start"}, "params": {"required": ["commandId", "missionId", "runId", "repository", "prompt", "pipeline", "roles", "budget", "isolationPolicy", "requestedCapabilities"]}}}]},
     {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"enum": ["run.cancel", "run.pause", "run.resume"]}, "params": {"required": ["commandId", "runId"]}}}]},
@@ -102,7 +135,9 @@
     {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "preferences.set"}, "params": {"required": ["commandId", "preferences"]}}}]},
     {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "node.events.ack"}, "params": {"required": ["commandId", "throughSequence"], "allOf": [{"if": {"properties": {"acknowledgementType": {"const": "snapshot_checkpoint"}}, "required": ["acknowledgementType"]}, "then": {"required": ["checkpointId"]}}, {"if": {"required": ["checkpointId"]}, "then": {"properties": {"acknowledgementType": {"const": "snapshot_checkpoint"}}}}]}}}]},
     {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "node.snapshot"}, "params": {"required": ["commandId", "checkpointId", "requestedAfterSequence", "pageSize"]}}}]},
-    {"allOf": [{"$ref": "#/$defs/notification"}, {"properties": {"method": {"enum": ["node.status_changed", "run.accepted", "run.started", "session.event", "approval.requested", "gate.completed", "artifact.available", "node.alert", "harness.status", "harness.limits_changed", "command.denied", "command.completed"]}, "params": {"required": ["eventId", "sequence"]}}}]},
+    {"allOf": [{"$ref": "#/$defs/notification"}, {"properties": {"method": {"const": "node.status_changed"}, "params": {"required": ["eventId", "sequence", "node"], "properties": {"node": {"$ref": "#/$defs/nodeState"}}}}}]},
+    {"allOf": [{"$ref": "#/$defs/notification"}, {"properties": {"method": {"const": "node.alert"}, "params": {"required": ["eventId", "sequence", "alert"], "properties": {"alert": {"$ref": "#/$defs/nodeAlertEvent"}}}}}]},
+    {"allOf": [{"$ref": "#/$defs/notification"}, {"properties": {"method": {"enum": ["run.accepted", "run.started", "session.event", "approval.requested", "gate.completed", "artifact.available", "harness.status", "harness.limits_changed", "command.denied", "command.completed"]}, "params": {"required": ["eventId", "sequence"]}}}]},
     {"allOf": [{"$ref": "#/$defs/notification"}, {"properties": {"method": {"enum": ["run.updated", "run.completed", "run.failed"]}, "params": {"required": ["eventId", "sequence"], "properties": {"agentIsolation": {"$ref": "#/$defs/agentIsolation"}}}}}]},
     {"allOf": [{"$ref": "#/$defs/notification"}, {"properties": {"method": {"const": "execution.activity"}, "params": {"required": ["eventId", "sequence", "activity"], "properties": {"activity": {"$ref": "execution-activity.schema.json#/$defs/activity"}}}}}]}
   ]

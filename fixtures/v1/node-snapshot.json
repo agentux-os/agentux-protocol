@@ -232,12 +232,24 @@
               "entryId": "node_alert:alert-1",
               "projectionType": "node_alert",
               "state": {
-                "alertId": "alert-1",
-                "status": "open",
                 "currentState": {
-                  "status": "open",
-                  "alertId": "alert-1"
-                }
+                  "alertId": "alert-1",
+                  "conditionKey": "harness:claude",
+                  "status": "active",
+                  "firstObservedAt": "2026-11-05T12:00:00Z",
+                  "summary": "Claude harness is unavailable.",
+                  "producer": "harness-monitor",
+                  "lastObservedAt": "2026-11-05T12:00:00Z",
+                  "code": "harness_unavailable"
+                },
+                "alertId": "alert-1",
+                "conditionKey": "harness:claude",
+                "status": "active",
+                "firstObservedAt": "2026-11-05T12:00:00Z",
+                "summary": "Claude harness is unavailable.",
+                "producer": "harness-monitor",
+                "lastObservedAt": "2026-11-05T12:00:00Z",
+                "code": "harness_unavailable"
               },
               "kind": "state"
             },
@@ -737,6 +749,610 @@
           }
         ],
         "expectedError": "run tombstone runId does not match entryId"
+      },
+      {
+        "expectedError": "snapshot node status offline",
+        "pages": [
+          {
+            "nodeId": "node-a",
+            "entries": [
+              {
+                "entryId": "approval:approval-1",
+                "projectionType": "approval",
+                "state": {
+                  "approvalId": "approval-1",
+                  "missionId": "mission-a",
+                  "status": "pending",
+                  "currentState": {
+                    "organizationId": "org-a",
+                    "status": "pending",
+                    "approvalId": "approval-1",
+                    "missionId": "mission-a"
+                  },
+                  "organizationId": "org-a"
+                },
+                "kind": "state"
+              },
+              {
+                "entryId": "artifact:artifact-1",
+                "projectionType": "artifact",
+                "state": {
+                  "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "runId": "run-001",
+                  "artifactId": "artifact-1",
+                  "uri": "artifact://artifact-1",
+                  "mediaType": "text/plain",
+                  "currentState": {
+                    "uri": "artifact://artifact-1",
+                    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    "organizationId": "org-a",
+                    "mediaType": "text/plain",
+                    "artifactId": "artifact-1",
+                    "runId": "run-001"
+                  },
+                  "organizationId": "org-a"
+                },
+                "kind": "state"
+              },
+              {
+                "entryId": "command:command-1",
+                "projectionType": "command",
+                "state": {
+                  "commandId": "command-1",
+                  "status": "completed",
+                  "method": "run.start",
+                  "currentState": {
+                    "organizationId": "org-a",
+                    "commandId": "command-1",
+                    "status": "completed",
+                    "method": "run.start"
+                  },
+                  "organizationId": "org-a"
+                },
+                "kind": "state"
+              },
+              {
+                "entryId": "gate:gate-1",
+                "projectionType": "gate",
+                "state": {
+                  "runId": "run-001",
+                  "gateId": "gate-1",
+                  "status": "completed",
+                  "currentState": {
+                    "organizationId": "org-a",
+                    "gateId": "gate-1",
+                    "status": "completed",
+                    "runId": "run-001"
+                  },
+                  "organizationId": "org-a"
+                },
+                "kind": "state"
+              },
+              {
+                "entryId": "harness:codex",
+                "projectionType": "harness",
+                "state": {
+                  "harnessId": "codex",
+                  "installed": true,
+                  "signedIn": true,
+                  "currentState": {
+                    "installed": true,
+                    "harnessId": "codex",
+                    "signedIn": true
+                  }
+                },
+                "kind": "state"
+              },
+              {
+                "entryId": "limit:limit-weekly",
+                "projectionType": "limit",
+                "state": {
+                  "harnessId": "codex",
+                  "remaining": 12,
+                  "kind": "weekly",
+                  "currentState": {
+                    "kind": "weekly",
+                    "remaining": 12,
+                    "harnessId": "codex",
+                    "limitId": "limit-weekly"
+                  },
+                  "limitId": "limit-weekly"
+                },
+                "kind": "state"
+              },
+              {
+                "entryId": "node:node-a",
+                "projectionType": "node",
+                "state": {
+                  "status": "offline",
+                  "capacity": {
+                    "slots": 2
+                  },
+                  "currentState": {
+                    "capacity": {
+                      "slots": 2
+                    },
+                    "status": "offline",
+                    "nodeId": "node-a"
+                  },
+                  "nodeId": "node-a"
+                },
+                "kind": "state"
+              }
+            ],
+            "pageCount": 2,
+            "snapshotId": "snapshot-7",
+            "highWaterSequence": 57,
+            "organizationId": "org-a",
+            "pageIndex": 0,
+            "entryCount": 13,
+            "checkpointId": "checkpoint-7",
+            "projectionCoverage": [
+              "approval",
+              "artifact",
+              "command",
+              "gate",
+              "harness",
+              "limit",
+              "node",
+              "node_alert",
+              "run",
+              "session",
+              "task"
+            ],
+            "nextPageToken": "opaque-page-1",
+            "requestedAfterSequence": 40,
+            "schemaVersion": "v1"
+          },
+          {
+            "nodeId": "node-a",
+            "entries": [
+              {
+                "entryId": "node_alert:alert-1",
+                "projectionType": "node_alert",
+                "state": {
+                  "currentState": {
+                    "alertId": "alert-1",
+                    "conditionKey": "harness:claude",
+                    "status": "active",
+                    "firstObservedAt": "2026-11-05T12:00:00Z",
+                    "summary": "Claude harness is unavailable.",
+                    "producer": "harness-monitor",
+                    "lastObservedAt": "2026-11-05T12:00:00Z",
+                    "code": "harness_unavailable"
+                  },
+                  "alertId": "alert-1",
+                  "conditionKey": "harness:claude",
+                  "status": "active",
+                  "firstObservedAt": "2026-11-05T12:00:00Z",
+                  "summary": "Claude harness is unavailable.",
+                  "producer": "harness-monitor",
+                  "lastObservedAt": "2026-11-05T12:00:00Z",
+                  "code": "harness_unavailable"
+                },
+                "kind": "state"
+              },
+              {
+                "entryId": "run:run-001",
+                "projectionType": "run",
+                "state": {
+                  "missionId": "mission-a",
+                  "runId": "run-001",
+                  "currentState": {
+                    "attempt": 2,
+                    "step": "compile",
+                    "sessions": [
+                      {
+                        "status": "running",
+                        "sessionId": "session-1"
+                      }
+                    ],
+                    "tasks": [
+                      {
+                        "taskId": "task-1",
+                        "status": "running"
+                      }
+                    ],
+                    "gates": [
+                      {
+                        "gateId": "gate-1",
+                        "status": "completed"
+                      }
+                    ]
+                  },
+                  "status": "running",
+                  "organizationId": "org-a",
+                  "owner": "command",
+                  "commandId": "cmd-run-run-001"
+                },
+                "kind": "state"
+              },
+              {
+                "entryId": "run:run-002",
+                "projectionType": "run",
+                "state": {
+                  "missionId": "mission-b",
+                  "runId": "run-002",
+                  "currentState": {
+                    "sessions": [],
+                    "step": "queued",
+                    "tasks": [],
+                    "gates": []
+                  },
+                  "status": "accepted",
+                  "organizationId": "org-a",
+                  "owner": "command",
+                  "commandId": "cmd-run-run-002"
+                },
+                "kind": "state"
+              },
+              {
+                "entryId": "run:run-003",
+                "projectionType": "run",
+                "removedAtSequence": 52,
+                "kind": "removed",
+                "runId": "run-003"
+              },
+              {
+                "entryId": "session:session-1",
+                "projectionType": "session",
+                "state": {
+                  "runId": "run-001",
+                  "status": "running",
+                  "sessionId": "session-1",
+                  "currentState": {
+                    "organizationId": "org-a",
+                    "status": "running",
+                    "runId": "run-001",
+                    "sessionId": "session-1"
+                  },
+                  "organizationId": "org-a"
+                },
+                "kind": "state"
+              },
+              {
+                "entryId": "task:task-1",
+                "projectionType": "task",
+                "state": {
+                  "taskId": "task-1",
+                  "runId": "run-001",
+                  "status": "running",
+                  "currentState": {
+                    "organizationId": "org-a",
+                    "taskId": "task-1",
+                    "status": "running",
+                    "runId": "run-001"
+                  },
+                  "organizationId": "org-a"
+                },
+                "kind": "state"
+              }
+            ],
+            "snapshotId": "snapshot-7",
+            "pageCount": 2,
+            "pageToken": "opaque-page-1",
+            "highWaterSequence": 57,
+            "organizationId": "org-a",
+            "pageIndex": 1,
+            "entryCount": 13,
+            "checkpointId": "checkpoint-7",
+            "projectionCoverage": [
+              "approval",
+              "artifact",
+              "command",
+              "gate",
+              "harness",
+              "limit",
+              "node",
+              "node_alert",
+              "run",
+              "session",
+              "task"
+            ],
+            "requestedAfterSequence": 40,
+            "schemaVersion": "v1"
+          }
+        ]
+      },
+      {
+        "expectedError": "snapshot alert has incomplete currentState",
+        "pages": [
+          {
+            "nodeId": "node-a",
+            "entries": [
+              {
+                "entryId": "approval:approval-1",
+                "projectionType": "approval",
+                "state": {
+                  "approvalId": "approval-1",
+                  "missionId": "mission-a",
+                  "status": "pending",
+                  "currentState": {
+                    "organizationId": "org-a",
+                    "status": "pending",
+                    "approvalId": "approval-1",
+                    "missionId": "mission-a"
+                  },
+                  "organizationId": "org-a"
+                },
+                "kind": "state"
+              },
+              {
+                "entryId": "artifact:artifact-1",
+                "projectionType": "artifact",
+                "state": {
+                  "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "runId": "run-001",
+                  "artifactId": "artifact-1",
+                  "uri": "artifact://artifact-1",
+                  "mediaType": "text/plain",
+                  "currentState": {
+                    "uri": "artifact://artifact-1",
+                    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    "organizationId": "org-a",
+                    "mediaType": "text/plain",
+                    "artifactId": "artifact-1",
+                    "runId": "run-001"
+                  },
+                  "organizationId": "org-a"
+                },
+                "kind": "state"
+              },
+              {
+                "entryId": "command:command-1",
+                "projectionType": "command",
+                "state": {
+                  "commandId": "command-1",
+                  "status": "completed",
+                  "method": "run.start",
+                  "currentState": {
+                    "organizationId": "org-a",
+                    "commandId": "command-1",
+                    "status": "completed",
+                    "method": "run.start"
+                  },
+                  "organizationId": "org-a"
+                },
+                "kind": "state"
+              },
+              {
+                "entryId": "gate:gate-1",
+                "projectionType": "gate",
+                "state": {
+                  "runId": "run-001",
+                  "gateId": "gate-1",
+                  "status": "completed",
+                  "currentState": {
+                    "organizationId": "org-a",
+                    "gateId": "gate-1",
+                    "status": "completed",
+                    "runId": "run-001"
+                  },
+                  "organizationId": "org-a"
+                },
+                "kind": "state"
+              },
+              {
+                "entryId": "harness:codex",
+                "projectionType": "harness",
+                "state": {
+                  "harnessId": "codex",
+                  "installed": true,
+                  "signedIn": true,
+                  "currentState": {
+                    "installed": true,
+                    "harnessId": "codex",
+                    "signedIn": true
+                  }
+                },
+                "kind": "state"
+              },
+              {
+                "entryId": "limit:limit-weekly",
+                "projectionType": "limit",
+                "state": {
+                  "harnessId": "codex",
+                  "remaining": 12,
+                  "kind": "weekly",
+                  "currentState": {
+                    "kind": "weekly",
+                    "remaining": 12,
+                    "harnessId": "codex",
+                    "limitId": "limit-weekly"
+                  },
+                  "limitId": "limit-weekly"
+                },
+                "kind": "state"
+              },
+              {
+                "entryId": "node:node-a",
+                "projectionType": "node",
+                "state": {
+                  "status": "ready",
+                  "capacity": {
+                    "slots": 2
+                  },
+                  "currentState": {
+                    "capacity": {
+                      "slots": 2
+                    },
+                    "status": "ready",
+                    "nodeId": "node-a"
+                  },
+                  "nodeId": "node-a"
+                },
+                "kind": "state"
+              }
+            ],
+            "pageCount": 2,
+            "snapshotId": "snapshot-7",
+            "highWaterSequence": 57,
+            "organizationId": "org-a",
+            "pageIndex": 0,
+            "entryCount": 13,
+            "checkpointId": "checkpoint-7",
+            "projectionCoverage": [
+              "approval",
+              "artifact",
+              "command",
+              "gate",
+              "harness",
+              "limit",
+              "node",
+              "node_alert",
+              "run",
+              "session",
+              "task"
+            ],
+            "nextPageToken": "opaque-page-1",
+            "requestedAfterSequence": 40,
+            "schemaVersion": "v1"
+          },
+          {
+            "nodeId": "node-a",
+            "entries": [
+              {
+                "entryId": "node_alert:alert-1",
+                "projectionType": "node_alert",
+                "state": {
+                  "currentState": {
+                    "alertId": "alert-1",
+                    "conditionKey": "harness:claude",
+                    "status": "active",
+                    "firstObservedAt": "2026-11-05T12:00:00Z",
+                    "summary": "Claude harness is unavailable.",
+                    "lastObservedAt": "2026-11-05T12:00:00Z"
+                  },
+                  "alertId": "alert-1",
+                  "conditionKey": "harness:claude",
+                  "status": "active",
+                  "firstObservedAt": "2026-11-05T12:00:00Z",
+                  "summary": "Claude harness is unavailable.",
+                  "lastObservedAt": "2026-11-05T12:00:00Z"
+                },
+                "kind": "state"
+              },
+              {
+                "entryId": "run:run-001",
+                "projectionType": "run",
+                "state": {
+                  "missionId": "mission-a",
+                  "runId": "run-001",
+                  "currentState": {
+                    "attempt": 2,
+                    "step": "compile",
+                    "sessions": [
+                      {
+                        "status": "running",
+                        "sessionId": "session-1"
+                      }
+                    ],
+                    "tasks": [
+                      {
+                        "taskId": "task-1",
+                        "status": "running"
+                      }
+                    ],
+                    "gates": [
+                      {
+                        "gateId": "gate-1",
+                        "status": "completed"
+                      }
+                    ]
+                  },
+                  "status": "running",
+                  "organizationId": "org-a",
+                  "owner": "command",
+                  "commandId": "cmd-run-run-001"
+                },
+                "kind": "state"
+              },
+              {
+                "entryId": "run:run-002",
+                "projectionType": "run",
+                "state": {
+                  "missionId": "mission-b",
+                  "runId": "run-002",
+                  "currentState": {
+                    "sessions": [],
+                    "step": "queued",
+                    "tasks": [],
+                    "gates": []
+                  },
+                  "status": "accepted",
+                  "organizationId": "org-a",
+                  "owner": "command",
+                  "commandId": "cmd-run-run-002"
+                },
+                "kind": "state"
+              },
+              {
+                "entryId": "run:run-003",
+                "projectionType": "run",
+                "removedAtSequence": 52,
+                "kind": "removed",
+                "runId": "run-003"
+              },
+              {
+                "entryId": "session:session-1",
+                "projectionType": "session",
+                "state": {
+                  "runId": "run-001",
+                  "status": "running",
+                  "sessionId": "session-1",
+                  "currentState": {
+                    "organizationId": "org-a",
+                    "status": "running",
+                    "runId": "run-001",
+                    "sessionId": "session-1"
+                  },
+                  "organizationId": "org-a"
+                },
+                "kind": "state"
+              },
+              {
+                "entryId": "task:task-1",
+                "projectionType": "task",
+                "state": {
+                  "taskId": "task-1",
+                  "runId": "run-001",
+                  "status": "running",
+                  "currentState": {
+                    "organizationId": "org-a",
+                    "taskId": "task-1",
+                    "status": "running",
+                    "runId": "run-001"
+                  },
+                  "organizationId": "org-a"
+                },
+                "kind": "state"
+              }
+            ],
+            "snapshotId": "snapshot-7",
+            "pageCount": 2,
+            "pageToken": "opaque-page-1",
+            "highWaterSequence": 57,
+            "organizationId": "org-a",
+            "pageIndex": 1,
+            "entryCount": 13,
+            "checkpointId": "checkpoint-7",
+            "projectionCoverage": [
+              "approval",
+              "artifact",
+              "command",
+              "gate",
+              "harness",
+              "limit",
+              "node",
+              "node_alert",
+              "run",
+              "session",
+              "task"
+            ],
+            "requestedAfterSequence": 40,
+            "schemaVersion": "v1"
+          }
+        ]
       }
     ]
   },

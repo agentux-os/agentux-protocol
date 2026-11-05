@@ -433,7 +433,18 @@
                       "nodeId",
                       "status",
                       "capacity"
-                    ]
+                    ],
+                    "properties": {
+                      "status": {"enum": ["ready", "draining", "error"]},
+                      "capacity": {"type": "object"},
+                      "currentState": {
+                        "required": ["nodeId", "status", "capacity"],
+                        "properties": {
+                          "status": {"enum": ["ready", "draining", "error"]},
+                          "capacity": {"type": "object"}
+                        }
+                      }
+                    }
                   }
                 }
               }
@@ -454,8 +465,37 @@
                   "state": {
                     "required": [
                       "alertId",
+                      "producer",
+                      "code",
+                      "conditionKey",
+                      "summary",
+                      "firstObservedAt",
+                      "lastObservedAt",
                       "status"
-                    ]
+                    ],
+                    "properties": {
+                      "status": {"enum": ["active", "resolved"]},
+                      "summary": {"type": "string", "minLength": 1, "maxLength": 2000, "pattern": "\\S"},
+                      "alertId": {"type": "string", "minLength": 1, "pattern": "\\S"},
+                      "producer": {"type": "string", "minLength": 1, "pattern": "\\S"},
+                      "code": {"type": "string", "minLength": 1, "pattern": "\\S"},
+                      "conditionKey": {"type": "string", "minLength": 1, "pattern": "\\S"},
+                      "firstObservedAt": {"type": "string", "format": "date-time"},
+                      "lastObservedAt": {"type": "string", "format": "date-time"},
+                      "currentState": {
+                        "required": ["alertId", "producer", "code", "conditionKey", "summary", "firstObservedAt", "lastObservedAt", "status"],
+                        "properties": {
+                          "status": {"enum": ["active", "resolved"]},
+                          "summary": {"type": "string", "minLength": 1, "maxLength": 2000, "pattern": "\\S"},
+                          "alertId": {"type": "string", "minLength": 1, "pattern": "\\S"},
+                          "producer": {"type": "string", "minLength": 1, "pattern": "\\S"},
+                          "code": {"type": "string", "minLength": 1, "pattern": "\\S"},
+                          "conditionKey": {"type": "string", "minLength": 1, "pattern": "\\S"},
+                          "firstObservedAt": {"type": "string", "format": "date-time"},
+                          "lastObservedAt": {"type": "string", "format": "date-time"}
+                        }
+                      }
+                    }
                   }
                 }
               }

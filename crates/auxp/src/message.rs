@@ -5,6 +5,7 @@ use serde_json::Value;
 
 use crate::PROTOCOL_VERSION;
 use crate::methods::{self, BASE_PARAMS, Kind};
+use crate::node::{NodeAlertEvent, NodeState};
 
 /// Params no message may carry: provider credentials stay on the node.
 const CREDENTIAL_PARAMS: &[&str] = &["apiKey", "providerToken"];
@@ -71,6 +72,32 @@ pub fn validate(message: &Value) -> Result<(), String> {
             serde_json::from_value(params["activity"].clone())
                 .map_err(|e| format!("invalid execution activity: {e}"))?;
         activity.validate()?;
+    }
+    match method {
+        "node.status_changed" => {
+            let node: NodeState =
+                serde_json::from_value(params.get("node").cloned().unwrap_or(Value::Null))
+                    .map_err(|error| format!("invalid node status payload: {error}"))?;
+            node.validate(text("nodeId"))?;
+        }
+        "node.alert" => {
+            let alert: NodeAlertEvent =
+                serde_json::from_value(params.get("alert").cloned().unwrap_or(Value::Null))
+                    .map_err(|error| format!("invalid node alert payload: {error}"))?;
+            alert.validate()?;
+        }
+        "node.heartbeat" => {
+            if params.contains_key("eventId") || params.contains_key("sequence") {
+                return Err("node.heartbeat must not carry eventId or sequence".into());
+            }
+            if !matches!(text("status"), "ready" | "draining" | "error") {
+                return Err("node.heartbeat status must be ready, draining, or error".into());
+            }
+            if !params.get("capacity").is_some_and(Value::is_object) {
+                return Err("node.heartbeat capacity must be an object".into());
+            }
+        }
+        _ => {}
     }
     let non_empty_list = |name: &str| {
         params
@@ -270,7 +297,11 @@ pub struct Params {
     #[serde(skip_serializing_if = "String::is_empty")]
     pub status: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub node: Option<NodeState>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub capacity: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub alert: Option<NodeAlertEvent>,
     /// The node's agent CLIs (`harness.status`), as it sent them.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub harnesses: Option<Value>,
@@ -312,6 +343,233 @@ mod tests {
             .unwrap()
             .extend(extra.as_object().unwrap().clone());
         json!({"jsonrpc": "2.0", "method": method, "params": params})
+    }
+
+    fn status_event(node_id: &str, status: &str) -> Value {
+        message(
+            "node.status_changed",
+            json!({
+                "eventId": "status-1",
+                "sequence": 1,
+                "node": {"nodeId": node_id, "status": status, "capacity": {"slots": 2}}
+            }),
+        )
+    }
+
+    fn alert_state(status: &str, first: &str, last: &str, summary: &str) -> Value {
+        json!({
+            "kind": "state",
+            "alert": {
+                "alertId": "alert-1",
+                "producer": "harness-monitor",
+                "code": "harness_unavailable",
+                "conditionKey": "harness:claude",
+                "summary": summary,
+                "firstObservedAt": first,
+                "lastObservedAt": last,
+                "status": status
+            }
+        })
+    }
+
+    #[test]
+    fn accepts_each_supported_node_operational_status() {
+        for status in ["ready", "draining", "error"] {
+            validate(&status_event("node-1", status)).unwrap();
+        }
+    }
+
+    #[test]
+    fn rejects_node_state_with_an_identity_different_from_the_envelope() {
+        assert!(validate(&status_event("node-other", "ready")).is_err());
+    }
+
+    #[test]
+    fn rejects_unsupported_node_operational_status() {
+        assert!(validate(&status_event("node-1", "offline")).is_err());
+    }
+
+    #[test]
+    fn rejects_status_events_without_object_capacity() {
+        for node in [
+            json!({"nodeId": "node-1", "status": "ready"}),
+            json!({"nodeId": "node-1", "status": "ready", "capacity": []}),
+        ] {
+            assert!(
+                validate(&message(
+                    "node.status_changed",
+                    json!({"eventId": "status-1", "sequence": 1, "node": node}),
+                ))
+                .is_err()
+            );
+        }
+    }
+
+    #[test]
+    fn rejects_heartbeat_with_event_sequence_fields() {
+        for extra in [
+            json!({"status": "ready", "capacity": {}, "eventId": "evt-1"}),
+            json!({"status": "ready", "capacity": {}, "sequence": 1}),
+        ] {
+            assert!(validate(&message("node.heartbeat", extra)).is_err());
+        }
+    }
+
+    #[test]
+    fn heartbeat_requires_an_operational_status_and_object_capacity() {
+        for params in [
+            json!({"status": "offline", "capacity": {}}),
+            json!({"status": "ready", "capacity": []}),
+        ] {
+            assert!(validate(&message("node.heartbeat", params)).is_err());
+        }
+    }
+
+    #[test]
+    fn accepts_full_alert_state_and_explicit_removal_events() {
+        for alert in [
+            alert_state(
+                "active",
+                "2026-11-05T12:00:00Z",
+                "2026-11-05T12:00:00Z",
+                "Claude harness is unavailable.",
+            ),
+            alert_state(
+                "resolved",
+                "2026-11-05T12:00:00Z",
+                "2026-11-05T12:04:00Z",
+                "Claude harness is available again.",
+            ),
+            json!({"kind": "removed", "alertId": "alert-1"}),
+        ] {
+            validate(&message(
+                "node.alert",
+                json!({"eventId": "alert-event-1", "sequence": 2, "alert": alert}),
+            ))
+            .unwrap();
+        }
+    }
+
+    #[test]
+    fn rejects_invalid_alert_status_and_malformed_removal() {
+        for alert in [
+            alert_state(
+                "open",
+                "2026-11-05T12:00:00Z",
+                "2026-11-05T12:00:00Z",
+                "A safe summary",
+            ),
+            json!({"kind": "removed"}),
+            json!({"kind": "removed", "alertId": "alert-1", "summary": "unexpected"}),
+        ] {
+            assert!(
+                validate(&message(
+                    "node.alert",
+                    json!({"eventId": "alert-event-1", "sequence": 2, "alert": alert}),
+                ))
+                .is_err()
+            );
+        }
+    }
+
+    #[test]
+    fn rejects_alert_events_without_a_typed_payload() {
+        assert!(
+            validate(&message(
+                "node.alert",
+                json!({"eventId": "alert-event-1", "sequence": 2}),
+            ))
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn rejects_unknown_and_secret_bearing_alert_fields() {
+        let mut alert = alert_state(
+            "active",
+            "2026-11-05T12:00:00Z",
+            "2026-11-05T12:00:00Z",
+            "A safe summary",
+        );
+        alert["alert"]["apiKey"] = json!("must-not-be-forwarded");
+        assert!(
+            validate(&message(
+                "node.alert",
+                json!({"eventId": "alert-event-1", "sequence": 2, "alert": alert}),
+            ))
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn rejects_alerts_with_reversed_observation_timestamps() {
+        let alert = alert_state(
+            "active",
+            "2026-11-05T12:04:00Z",
+            "2026-11-05T12:00:00Z",
+            "A safe summary",
+        );
+        assert!(
+            validate(&message(
+                "node.alert",
+                json!({"eventId": "alert-event-1", "sequence": 2, "alert": alert}),
+            ))
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn rejects_alert_summaries_over_2000_unicode_characters() {
+        let alert = alert_state(
+            "active",
+            "2026-11-05T12:00:00Z",
+            "2026-11-05T12:00:00Z",
+            &"é".repeat(2001),
+        );
+        assert!(
+            validate(&message(
+                "node.alert",
+                json!({"eventId": "alert-event-1", "sequence": 2, "alert": alert}),
+            ))
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn rejects_empty_alert_summaries() {
+        let alert = alert_state("active", "2026-11-05T12:00:00Z", "2026-11-05T12:00:00Z", "");
+        assert!(
+            validate(&message(
+                "node.alert",
+                json!({"eventId": "alert-event-1", "sequence": 2, "alert": alert}),
+            ))
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn params_preserve_typed_node_and_alert_payloads() {
+        let node = json!({"nodeId": "node-1", "status": "ready", "capacity": {"slots": 2}});
+        let alert = alert_state(
+            "active",
+            "2026-11-05T12:00:00Z",
+            "2026-11-05T12:00:00Z",
+            "A safe summary",
+        );
+        for (method, field, payload) in [
+            ("node.status_changed", "node", node),
+            ("node.alert", "alert", alert),
+        ] {
+            let extra = if field == "node" {
+                json!({"eventId": "event-1", "sequence": 1, "node": payload})
+            } else {
+                json!({"eventId": "event-1", "sequence": 1, "alert": payload})
+            };
+            let message = message(method, extra);
+            let params: Params = serde_json::from_value(message["params"].clone()).unwrap();
+            let round_trip = serde_json::to_value(params).unwrap();
+            assert_eq!(round_trip[field], message["params"][field]);
+        }
     }
 
     #[test]

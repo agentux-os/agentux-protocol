@@ -122,7 +122,7 @@ The contract is [`schemas/v1/enrollment.schema.json`](schemas/v1/enrollment.sche
 
 | Event | Meaning |
 |---|---|
-| `node.status_changed` | Node online/offline/draining/error |
+| `node.status_changed` | Sequenced full replacement of node operational status and capacity |
 | `run.accepted` | Node accepted a run command |
 | `run.started` | Worktree and technical run exist |
 | `run.updated` | Step, cost or activity changed |
@@ -132,11 +132,13 @@ The contract is [`schemas/v1/enrollment.schema.json`](schemas/v1/enrollment.sche
 | `run.completed` | Technical run finished |
 | `run.failed` | Technical run failed |
 | `artifact.available` | Log, diff, plan or report is available |
-| `node.alert` | Local safety, capacity or process issue |
+| `node.alert` | Sequenced full alert state (`active`/`resolved`) or explicit removal tombstone |
 | `harness.status` | The node's agent CLIs changed (same shape as `harness.list`'s result) |
 | `harness.limits_changed` | Usage limits in force changed: every limit still in force |
 | `command.denied` | The node's policy refused a command, or holds it for local confirmation (`reason`) |
 | `command.completed` | A command held for confirmation ran (or was rejected) at the node: `commandId`, `method`, `ok`, `result` or `error`, `confirmedBy` |
+
+Node operational status is `ready`, `draining` or `error`; `offline` is not an emitted status. A `node.status_changed` event replaces the complete status and capacity state and advances the node's event sequence. `node.heartbeat` repeats the last committed status and capacity without `eventId` or `sequence`; Command derives fleet presence from heartbeat freshness. Alerts have a stable `alertId`, a complete operator-safe summary and observation timestamps. A state event replaces the full alert record; `resolved` remains explicit until a later removal tombstone advances the sequence.
 
 After the first agent session opens, `run.updated`, `run.completed` and `run.failed` report the run's effective `agentIsolation` when available. It describes the weakest isolation used by any agent session in that run: host mode (`none`) is weaker than `bubblewrap`, and sandbox network access (`outbound`) is weaker than no network (`none`). A host run omits `network`. `source` is selected from the session(s) establishing that weakest mode/network; if they tie, use the highest-precedence source in this order: `node-policy`, `project`, `command`, `default`. The field can be absent before a session starts. Consumers should treat it as observed execution state, not as a request or a promise that future sessions will be more restricted.
 
