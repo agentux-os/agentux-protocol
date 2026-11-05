@@ -1,6 +1,6 @@
 # ADR 0016: Atomic node snapshot checkpoints
 
-- **Status:** Proposed — requires Protocol owner decision
+- **Status:** Accepted
 - **Date:** 2026-11-04
 - **Issue:** [agentux-protocol#16](https://github.com/agentux-os/agentux-protocol/issues/16)
 
@@ -8,7 +8,7 @@
 
 When an event cursor expires, per-run `run.snapshot` cannot discover runs created while disconnected, provide one node-wide sequence boundary, or recover missing historical events. The receiver must repair its current-state projection without advancing its cursor over uncovered state or fabricating history.
 
-## Decision proposed
+## Decision
 
 Add the optional `node.snapshot_checkpoint.v1` capability and the Command-to-node `node.snapshot` method in AUXP v1. It is dependent on mutual negotiation of `node.event_replay.v1`. One request establishes an immutable, authenticated organization/node-scoped snapshot and subsequent requests page through that same snapshot. Command supplies a stable `checkpointId`; each page repeats a stable `snapshotId`, starting cursor, high-water sequence, exact projection coverage, and page/entry manifest. The concatenated entries form complete authoritative inventories for every current-state projection updated by the node event stream: approval, artifact, command, gate, harness, limit, node, node alert, run, session and task. Historical event feeds remain explicitly gapped and are never synthesized.
 
@@ -32,11 +32,6 @@ The optional capability is negotiated through the existing `node.hello.capabilit
 - Core and Command can implement independently from the JSON Schema, examples and protocol rules.
 - If a node cannot provide every required projection at one consistent event-sequence boundary, it returns `snapshot_unavailable` and cannot issue a checkpoint ACK.
 
-## Owner decisions requested
+## Decision record
 
-- Accept or revise the recommended immutable paged snapshot design and its proposed limits: 100 entries / 1 MiB per page, 10,000 entries / 64 MiB total, and a 15-minute snapshot lifetime.
-- **Projection coverage (reserved):** confirm that the listed current-state projection kinds are exhaustive for the node event stream, including what current task/session/gate state must be represented; identify any omitted read model before checkpoint ACK can be enabled.
-- **ACK binding (reserved):** confirm the `node.events.ack` `acknowledgementType` plus required `checkpointId` binding, exact high-water rule, and last-accepted-ACK comparison; an ACK with incomplete projection coverage must remain impossible.
-- **Inventory scope (reserved):** confirm authenticated organization scoping, `owner: command`/`commandId` inclusion, exclusion of local-only runs, and `entryId = "<projectionType>:<stableProjectionId>"` including `runId` tombstones.
-- Confirm complete-set reconciliation and tombstone compaction only after the minimum retention and any pinned snapshot expiry.
-- Confirm the capability name and `node.snapshot` method name before implementations depend on them.
+The Protocol owner accepts the immutable paged checkpoint contract, the limits, the eleven-projection inventory, authenticated organization and Command ownership scope, tombstone retention/compaction rules, checkpoint ACK binding, and the `node.snapshot_checkpoint.v1` capability / `node.snapshot` method names. Implementations must preserve the all-pages validation and atomic persistence requirements above. Any future projection added to the sequenced node event stream must also be added to checkpoint coverage before a checkpoint ACK can cover events that update it.
