@@ -19,6 +19,7 @@ pub mod activity;
 pub mod codes;
 pub mod enrollment;
 pub mod methods;
+pub mod node;
 pub mod policy;
 pub mod provision;
 pub mod replay;
