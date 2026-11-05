@@ -48,6 +48,25 @@ const accepted = (message) => {
   if (message.method === "node.resume" && (!Number.isInteger(message.params.lastAcknowledgedSequence) || message.params.lastAcknowledgedSequence < 0 || !message.params.commandId)) return false;
   if (message.method === "node.events.ack" && (!Number.isInteger(message.params.throughSequence) || message.params.throughSequence < 0 || !message.params.commandId || ![undefined, "events", "snapshot_checkpoint"].includes(message.params.acknowledgementType) || (message.params.acknowledgementType === "snapshot_checkpoint" && (typeof message.params.checkpointId !== "string" || message.params.checkpointId.length < 1 || message.params.checkpointId.length > 128)) || (message.params.checkpointId !== undefined && message.params.acknowledgementType !== "snapshot_checkpoint"))) return false;
   if (message.method === "node.snapshot" && (!message.params.commandId || !message.params.checkpointId || !Number.isInteger(message.params.requestedAfterSequence) || message.params.requestedAfterSequence < 0 || !Number.isInteger(message.params.pageSize) || message.params.pageSize < 1 || message.params.pageSize > 100 || (message.params.pageToken !== undefined && (typeof message.params.pageToken !== "string" || message.params.pageToken.length > 2048)))) return false;
+  if (message.method === "node.heartbeat" && ("eventId" in message.params || "sequence" in message.params || !["ready", "draining", "error"].includes(message.params.status) || !message.params.capacity || typeof message.params.capacity !== "object" || Array.isArray(message.params.capacity))) return false;
+  if (message.method === "node.status_changed") {
+    const node = message.params.node;
+    if (!node || typeof node !== "object" || Array.isArray(node) || node.nodeId !== message.params.nodeId || !["ready", "draining", "error"].includes(node.status) || !node.capacity || typeof node.capacity !== "object" || Array.isArray(node.capacity) || Object.keys(node).some((key) => !["nodeId", "status", "capacity"].includes(key))) return false;
+  }
+  if (message.method === "node.alert") {
+    const event = message.params.alert;
+    if (!event || typeof event !== "object" || Array.isArray(event)) return false;
+    if (event.kind === "removed") {
+      if (Object.keys(event).some((key) => !["kind", "alertId"].includes(key)) || typeof event.alertId !== "string" || !event.alertId.trim()) return false;
+    } else if (event.kind === "state") {
+      const alert = event.alert;
+      const keys = ["alertId", "producer", "code", "conditionKey", "summary", "firstObservedAt", "lastObservedAt", "status"];
+      const charCount = (value) => [...value].length;
+      const timestamp = (value) => typeof value === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value) && Number.isFinite(Date.parse(value));
+      if (!alert || typeof alert !== "object" || Array.isArray(alert) || keys.some((key) => !(key in alert)) || Object.keys(alert).some((key) => !keys.includes(key)) || keys.slice(0, 4).some((key) => typeof alert[key] !== "string" || !alert[key].trim()) || typeof alert.summary !== "string" || !alert.summary.trim() || charCount(alert.summary) > 2000 || !["active", "resolved"].includes(alert.status) || !timestamp(alert.firstObservedAt) || !timestamp(alert.lastObservedAt) || Date.parse(alert.lastObservedAt) < Date.parse(alert.firstObservedAt)) return false;
+      if (Object.keys(event).some((key) => !["kind", "alert"].includes(key))) return false;
+    } else return false;
+  }
   if ("apiKey" in message.params || "providerToken" in message.params) return false;
   const forbidden = (value) => {
     if (Array.isArray(value)) return value.some(forbidden);
@@ -125,6 +144,18 @@ const validSnapshotPages = (pages) => {
     for (const entry of page.entries) {
       if (!entry.entryId || !requiredSnapshotProjections.includes(entry.projectionType) || !entry.entryId.startsWith(`${entry.projectionType}:`) || entry.entryId.length === entry.projectionType.length + 1) return false;
       if (entry.kind === "state" && (!entry.state || typeof entry.state !== "object" || Array.isArray(entry.state) || !entry.state.currentState || typeof entry.state.currentState !== "object" || Array.isArray(entry.state.currentState))) return false;
+      if (entry.kind === "state" && entry.projectionType === "node") {
+        const node = entry.state;
+        const current = node.currentState;
+        if (!node.nodeId || !["ready", "draining", "error"].includes(node.status) || !node.capacity || typeof node.capacity !== "object" || Array.isArray(node.capacity) || current.nodeId !== node.nodeId || !["ready", "draining", "error"].includes(current.status) || !current.capacity || typeof current.capacity !== "object" || Array.isArray(current.capacity)) return false;
+      }
+      if (entry.kind === "state" && entry.projectionType === "node_alert") {
+        const alert = entry.state;
+        const current = alert.currentState;
+        const keys = ["alertId", "producer", "code", "conditionKey", "summary", "firstObservedAt", "lastObservedAt", "status"];
+        const timestamp = (value) => typeof value === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value) && Number.isFinite(Date.parse(value));
+        if (alert.alertId !== current.alertId || keys.some((key) => !(key in alert) || !(key in current)) || [alert, current].some((item) => !["active", "resolved"].includes(item.status) || typeof item.summary !== "string" || !item.summary.trim() || [...item.summary].length > 2000 || !timestamp(item.firstObservedAt) || !timestamp(item.lastObservedAt) || Date.parse(item.lastObservedAt) < Date.parse(item.firstObservedAt))) return false;
+      }
       if (entry.kind === "state" && entry.projectionType === "run" && (entry.state.owner !== "command" || !entry.state.commandId || !entry.state.organizationId || entry.state.organizationId !== page.organizationId || entry.state.runId !== entry.entryId.slice("run:".length) || entry.state.currentState.sessions === undefined || entry.state.currentState.gates === undefined || entry.state.currentState.tasks === undefined)) return false;
       if (entry.kind === "removed" && (!Number.isInteger(entry.removedAtSequence) || entry.removedAtSequence <= first.requestedAfterSequence || entry.removedAtSequence > first.highWaterSequence || (entry.projectionType === "run" && (entry.runId !== entry.entryId.slice("run:".length) || !entry.runId)))) return false;
       if (!(["state", "removed"].includes(entry.kind))) return false;

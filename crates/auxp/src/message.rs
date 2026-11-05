@@ -86,8 +86,16 @@ pub fn validate(message: &Value) -> Result<(), String> {
                     .map_err(|error| format!("invalid node alert payload: {error}"))?;
             alert.validate()?;
         }
-        "node.heartbeat" if params.contains_key("eventId") || params.contains_key("sequence") => {
-            return Err("node.heartbeat must not carry eventId or sequence".into());
+        "node.heartbeat" => {
+            if params.contains_key("eventId") || params.contains_key("sequence") {
+                return Err("node.heartbeat must not carry eventId or sequence".into());
+            }
+            if !matches!(text("status"), "ready" | "draining" | "error") {
+                return Err("node.heartbeat status must be ready, draining, or error".into());
+            }
+            if !params.get("capacity").is_some_and(Value::is_object) {
+                return Err("node.heartbeat capacity must be an object".into());
+            }
         }
         _ => {}
     }
@@ -404,6 +412,16 @@ mod tests {
             json!({"status": "ready", "capacity": {}, "sequence": 1}),
         ] {
             assert!(validate(&message("node.heartbeat", extra)).is_err());
+        }
+    }
+
+    #[test]
+    fn heartbeat_requires_an_operational_status_and_object_capacity() {
+        for params in [
+            json!({"status": "offline", "capacity": {}}),
+            json!({"status": "ready", "capacity": []}),
+        ] {
+            assert!(validate(&message("node.heartbeat", params)).is_err());
         }
     }
 

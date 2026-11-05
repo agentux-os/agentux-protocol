@@ -95,6 +95,8 @@ pub fn required_params(method: &str) -> Option<&'static [&'static str]> {
             "supportedProtocolVersions",
         ],
         "node.heartbeat" => &["status", "capacity"],
+        "node.status_changed" => &["eventId", "sequence", "node"],
+        "node.alert" => &["eventId", "sequence", "alert"],
         "node.resume" => &["commandId", "lastAcknowledgedSequence"],
         "node.events.ack" => &["commandId", "throughSequence"],
         "node.snapshot" => &[

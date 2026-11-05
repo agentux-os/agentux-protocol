@@ -325,6 +325,86 @@ fn validate_entry(
             {
                 return Err("state entry must contain its complete currentState object".into());
             }
+            let current = state
+                .get("currentState")
+                .and_then(Value::as_object)
+                .ok_or("state entry must contain its complete currentState object")?;
+            match entry.projection_type {
+                ProjectionType::Node => {
+                    for node in [state, current] {
+                        if !matches!(
+                            node.get("status").and_then(Value::as_str),
+                            Some("ready" | "draining" | "error")
+                        ) || !node.get("capacity").is_some_and(Value::is_object)
+                        {
+                            return Err(
+                                "node snapshot state requires supported status and object capacity"
+                                    .into(),
+                            );
+                        }
+                    }
+                    if current.get("nodeId") != state.get("nodeId") {
+                        return Err(
+                            "node snapshot currentState nodeId must match the projection".into(),
+                        );
+                    }
+                }
+                ProjectionType::NodeAlert => {
+                    if current.get("alertId") != state.get("alertId") {
+                        return Err(
+                            "node alert snapshot currentState alertId must match the projection"
+                                .into(),
+                        );
+                    }
+                    for alert in [state, current] {
+                        for field in ["alertId", "producer", "code", "conditionKey", "summary"] {
+                            if !alert.get(field).is_some_and(non_empty_string) {
+                                return Err(format!(
+                                    "node alert snapshot state requires non-empty {field}"
+                                ));
+                            }
+                        }
+                        if !matches!(
+                            alert.get("status").and_then(Value::as_str),
+                            Some("active" | "resolved")
+                        ) {
+                            return Err(
+                                "node alert snapshot state requires active or resolved status"
+                                    .into(),
+                            );
+                        }
+                        let summary = alert.get("summary").and_then(Value::as_str).unwrap();
+                        if summary.chars().count() > 2_000 {
+                            return Err(
+                                "node alert snapshot summary exceeds 2000 Unicode characters"
+                                    .into(),
+                            );
+                        }
+                        let first: jiff::Timestamp = alert
+                            .get("firstObservedAt")
+                            .and_then(Value::as_str)
+                            .ok_or("node alert snapshot requires firstObservedAt")?
+                            .parse()
+                            .map_err(|error| {
+                                format!("node alert firstObservedAt must be RFC3339: {error}")
+                            })?;
+                        let last: jiff::Timestamp = alert
+                            .get("lastObservedAt")
+                            .and_then(Value::as_str)
+                            .ok_or("node alert snapshot requires lastObservedAt")?
+                            .parse()
+                            .map_err(|error| {
+                                format!("node alert lastObservedAt must be RFC3339: {error}")
+                            })?;
+                        if last < first {
+                            return Err(
+                                "node alert lastObservedAt must not precede firstObservedAt".into(),
+                            );
+                        }
+                    }
+                }
+                _ => {}
+            }
             if matches!(
                 entry.projection_type,
                 ProjectionType::Run
