@@ -1,6 +1,14 @@
 {
   "valid": [
     {
+      "jsonrpc": "2.0", "id": "artifact-get-1", "method": "artifact.get",
+      "params": {"protocolVersion":"v1","organizationId":"org-demo","nodeId":"node-01","messageId":"msg-artifact-1","occurredAt":"2026-11-06T12:00:00Z","commandId":"cmd-artifact-1","artifactId":"artifact-01","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","offset":0,"maxBytes":262144}
+    },
+    {
+      "jsonrpc": "2.0", "method": "execution.activity",
+      "params": {"protocolVersion":"v1","organizationId":"org-demo","nodeId":"node-01","messageId":"msg-artifact-removed","occurredAt":"2026-11-06T12:00:01Z","eventId":"evt-artifact-removed","sequence":8,"activity":{"schemaVersion":"v1","activityId":"activity-artifact-removed","missionId":"mission-01","runId":"run-01","agentId":"agent-01","roleId":"worker","type":"artifact_removed","artifactId":"artifact-01","summary":"Artifact removed"}}
+    },
+    {
       "jsonrpc": "2.0",
       "id": "hello-1",
       "method": "node.hello",
@@ -800,6 +808,11 @@
     }
   ],
   "invalid": [
+    {
+      "jsonrpc": "2.0", "id": "artifact-get-invalid", "method": "artifact.get",
+      "params": {"protocolVersion":"v1","organizationId":"org-demo","nodeId":"node-01","messageId":"msg-artifact-2","occurredAt":"2026-11-06T12:00:00Z","commandId":"cmd-artifact-2","artifactId":"artifact-01","sha256":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","offset":0,"maxBytes":262145},
+      "expectedError": "artifact.get bounds and digest must be canonical"
+    },
     {
       "jsonrpc": "2.0",
       "method": "run.failed",

@@ -23,6 +23,7 @@ pub const DEFAULTS: &[(&str, Decision)] = &[
     ("node.resume", Decision::Allow),
     ("node.events.ack", Decision::Allow),
     ("node.snapshot", Decision::Allow),
+    ("artifact.get", Decision::Allow),
     ("harness.list", Decision::Allow),
     ("harness.test", Decision::Allow),
     ("run.cancel", Decision::Allow),

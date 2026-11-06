@@ -19,6 +19,9 @@ pub const OFFICE_PROJECTION: &str =
 /// Approval resolution requests and answers (`approval-resolution.v1`).
 pub const APPROVAL_RESOLUTION: &str =
     include_str!("../../../schemas/v1/approval-resolution.schema.json");
+/// Authenticated, digest-bound artifact retrieval (`artifact.lifecycle.v1`).
+pub const ARTIFACT_LIFECYCLE: &str =
+    include_str!("../../../schemas/v1/artifact-lifecycle.schema.json");
 
 #[cfg(test)]
 mod tests {
@@ -34,6 +37,7 @@ mod tests {
             ENROLLMENT,
             OFFICE_PROJECTION,
             APPROVAL_RESOLUTION,
+            ARTIFACT_LIFECYCLE,
         ] {
             let value: serde_json::Value = serde_json::from_str(schema).unwrap();
             assert!(

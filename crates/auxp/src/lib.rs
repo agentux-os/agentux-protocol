@@ -16,6 +16,7 @@
 //! - [`schemas`]: the JSON Schemas themselves, for contract tests.
 
 pub mod activity;
+pub mod artifact;
 pub mod codes;
 pub mod enrollment;
 pub mod methods;
@@ -28,7 +29,7 @@ pub mod snapshot;
 
 mod message;
 
-pub use message::{AgentIsolation, Params, validate};
+pub use message::{AgentIsolation, Params, validate, validate_with_capabilities};
 
 /// The protocol version every message carries in `protocolVersion`.
 pub const PROTOCOL_VERSION: &str = "v1";

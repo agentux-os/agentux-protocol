@@ -14,6 +14,61 @@ pub const MAX_SNAPSHOT_ENTRIES: usize = 10_000;
 pub const MAX_SNAPSHOT_BYTES: usize = 67_108_864;
 pub const MAX_PAGES: usize = 10_000;
 
+/// Validate the stricter artifact projection required by
+/// `artifact.lifecycle.v1`. Call only after mutual capability negotiation;
+/// the generic Protocol #17 snapshot profile remains unchanged.
+pub fn validate_lifecycle_artifact_state(state: &Value, node_id: &str) -> Result<(), String> {
+    let text = |key: &str| state.get(key).and_then(Value::as_str).unwrap_or("");
+    let artifact_id = text("artifactId");
+    let revision = text("revision");
+    let expected_uri = format!("artifact://{node_id}/{artifact_id}/{revision}");
+    if artifact_id.is_empty()
+        || artifact_id.chars().count() > 128
+        || text("organizationId").is_empty()
+        || text("runId").is_empty()
+        || text("runId").chars().count() > 128
+        || text("mediaType").is_empty()
+        || text("mediaType").chars().count() > 127
+        || !state
+            .get("byteLength")
+            .and_then(Value::as_u64)
+            .is_some_and(|n| n <= 25 * 1024 * 1024)
+        || revision.len() != 64
+        || !revision
+            .bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+        || text("uri") != expected_uri
+    {
+        return Err(
+            "artifact lifecycle state must be complete and bound to its exact node, id and digest"
+                .into(),
+        );
+    }
+    Ok(())
+}
+
+/// Apply the optional strict artifact profile after the ordinary Protocol #17
+/// page-chain validation. Pass `true` only when the full lifecycle capability
+/// dependency set was mutually negotiated on this connection.
+pub fn validate_page_chain_with_artifact_lifecycle(
+    chain: SnapshotPageChain,
+    lifecycle_negotiated: bool,
+) -> Result<SnapshotPageChain, String> {
+    if lifecycle_negotiated {
+        for entry in chain.pages.iter().flat_map(|page| &page.entries) {
+            if entry.kind == EntryKind::State && entry.projection_type == ProjectionType::Artifact {
+                let state = entry.state.as_ref().ok_or("artifact state is missing")?;
+                validate_lifecycle_artifact_state(state, chain.node_id())?;
+                let current = state
+                    .get("currentState")
+                    .ok_or("artifact currentState is missing")?;
+                validate_lifecycle_artifact_state(current, chain.node_id())?;
+            }
+        }
+    }
+    Ok(chain)
+}
+
 /// Every node-owned current-state projection changed by a sequenced node event.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -479,4 +534,56 @@ fn state_identity(kind: ProjectionType, state: &serde_json::Map<String, Value>) 
 
 fn non_empty_string(value: &Value) -> bool {
     value.as_str().is_some_and(|text| !text.is_empty())
+}
+
+#[cfg(test)]
+mod artifact_lifecycle_tests {
+    use super::{
+        EntryKind, PROJECTION_COVERAGE, ProjectionType, SnapshotEntry, SnapshotPage,
+        SnapshotPageChain, validate_lifecycle_artifact_state,
+        validate_page_chain_with_artifact_lifecycle,
+    };
+    use serde_json::json;
+
+    #[test]
+    fn lifecycle_artifact_is_bound_to_node_id_and_revision() {
+        let digest = "a".repeat(64);
+        let state = json!({"artifactId":"a1","organizationId":"org-1","runId":"run-1","revision":digest,"mediaType":"text/plain","byteLength":2,"uri":format!("artifact://node-1/a1/{}", "a".repeat(64))});
+        assert!(validate_lifecycle_artifact_state(&state, "node-1").is_ok());
+        assert!(validate_lifecycle_artifact_state(&state, "node-2").is_err());
+    }
+
+    #[test]
+    fn negotiated_checkpoint_profile_checks_artifact_projection_and_current_state() {
+        let digest = "b".repeat(64);
+        let artifact = json!({"artifactId":"a1","organizationId":"org-1","runId":"run-1","revision":digest,"mediaType":"text/plain","byteLength":2,"uri":format!("artifact://node-1/a1/{}", "b".repeat(64))});
+        let entry = SnapshotEntry {
+            kind: EntryKind::State,
+            projection_type: ProjectionType::Artifact,
+            entry_id: "artifact:a1".into(),
+            state: Some(
+                json!({"artifactId":"a1","organizationId":"org-1","runId":"run-1","revision":digest,"mediaType":"text/plain","byteLength":2,"uri":format!("artifact://node-1/a1/{}", "b".repeat(64)),"currentState":artifact}),
+            ),
+            removed_at_sequence: None,
+            run_id: None,
+        };
+        let page = SnapshotPage {
+            schema_version: "v1".into(),
+            checkpoint_id: "c1".into(),
+            snapshot_id: "s1".into(),
+            organization_id: "org-1".into(),
+            node_id: "node-1".into(),
+            requested_after_sequence: 0,
+            high_water_sequence: 1,
+            projection_coverage: PROJECTION_COVERAGE.to_vec(),
+            page_index: 0,
+            page_count: 1,
+            entry_count: 1,
+            page_token: None,
+            next_page_token: None,
+            entries: vec![entry],
+        };
+        let chain = SnapshotPageChain { pages: vec![page] };
+        assert!(validate_page_chain_with_artifact_lifecycle(chain, true).is_ok());
+    }
 }

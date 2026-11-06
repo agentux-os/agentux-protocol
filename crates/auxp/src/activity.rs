@@ -138,6 +138,10 @@ pub enum ActivityKind {
         summary: String,
         artifacts: Vec<ArtifactRef>,
     },
+    ArtifactRemoved {
+        summary: String,
+        artifact_id: String,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -240,7 +244,8 @@ impl Activity {
             | ActivityKind::ResultReturned { summary, .. }
             | ActivityKind::TaskCompleted { summary }
             | ActivityKind::TaskFailed { summary }
-            | ActivityKind::ArtifactAvailable { summary, .. } => summary,
+            | ActivityKind::ArtifactAvailable { summary, .. }
+            | ActivityKind::ArtifactRemoved { summary, .. } => summary,
         };
         if summary.chars().count() > MAX_SUMMARY_CHARS {
             return Err("activity summary exceeds 2000 characters".into());
@@ -312,6 +317,11 @@ impl Activity {
                 }
             }
         }
+        if let ActivityKind::ArtifactRemoved { artifact_id, .. } = &self.kind
+            && (artifact_id.is_empty() || artifact_id.chars().count() > 128)
+        {
+            return Err("artifactId must contain 1..=128 characters".into());
+        }
         Ok(())
     }
 }
@@ -337,6 +347,22 @@ mod tests {
         let mut invalid = json!({"schemaVersion":"v1","activityId":"a1","missionId":"m1","runId":"r1","agentId":"agent-a","roleId":"worker","type":"tool_progress","toolName":"search","toolCallId":"tool-1","progress":101,"summary":"working"});
         assert!(
             serde_json::from_value::<Activity>(invalid.take())
+                .unwrap()
+                .validate()
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn artifact_removal_has_a_stable_bounded_identity() {
+        let value = json!({"schemaVersion":"v1","activityId":"a1","missionId":"m1","runId":"r1","agentId":"agent-a","roleId":"worker","type":"artifact_removed","artifactId":"artifact-1","summary":"Artifact removed"});
+        serde_json::from_value::<Activity>(value)
+            .unwrap()
+            .validate()
+            .unwrap();
+        let invalid = json!({"schemaVersion":"v1","activityId":"a1","missionId":"m1","runId":"r1","agentId":"agent-a","roleId":"worker","type":"artifact_removed","artifactId":"","summary":"removed"});
+        assert!(
+            serde_json::from_value::<Activity>(invalid)
                 .unwrap()
                 .validate()
                 .is_err()

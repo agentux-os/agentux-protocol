@@ -26,6 +26,10 @@
         "missionId": {"type": "string", "minLength": 1},
         "runId": {"type": "string", "minLength": 1},
         "sessionId": {"type": "string", "minLength": 1},
+        "artifactId": {"type": "string", "minLength": 1, "maxLength": 128},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "offset": {"type": "integer", "minimum": 0, "maximum": 26214400},
+        "maxBytes": {"type": "integer", "minimum": 1, "maximum": 262144},
         "activity": {"$ref": "execution-activity.schema.json#/$defs/activity"},
         "node": {"$ref": "#/$defs/nodeState"},
         "alert": {"$ref": "#/$defs/nodeAlertEvent"}
@@ -135,6 +139,7 @@
     {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "preferences.set"}, "params": {"required": ["commandId", "preferences"]}}}]},
     {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "node.events.ack"}, "params": {"required": ["commandId", "throughSequence"], "allOf": [{"if": {"properties": {"acknowledgementType": {"const": "snapshot_checkpoint"}}, "required": ["acknowledgementType"]}, "then": {"required": ["checkpointId"]}}, {"if": {"required": ["checkpointId"]}, "then": {"properties": {"acknowledgementType": {"const": "snapshot_checkpoint"}}}}]}}}]},
     {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "node.snapshot"}, "params": {"required": ["commandId", "checkpointId", "requestedAfterSequence", "pageSize"]}}}]},
+    {"allOf": [{"$ref": "#/$defs/request"}, {"properties": {"method": {"const": "artifact.get"}, "params": {"required": ["commandId", "artifactId", "sha256", "offset", "maxBytes"], "allOf": [{"$ref": "artifact-lifecycle.schema.json#/$defs/getParams"}]}}}]},
     {"allOf": [{"$ref": "#/$defs/notification"}, {"properties": {"method": {"const": "node.status_changed"}, "params": {"required": ["eventId", "sequence", "node"], "properties": {"node": {"$ref": "#/$defs/nodeState"}}}}}]},
     {"allOf": [{"$ref": "#/$defs/notification"}, {"properties": {"method": {"const": "node.alert"}, "params": {"required": ["eventId", "sequence", "alert"], "properties": {"alert": {"$ref": "#/$defs/nodeAlertEvent"}}}}}]},
     {"allOf": [{"$ref": "#/$defs/notification"}, {"properties": {"method": {"enum": ["run.accepted", "run.started", "session.event", "approval.requested", "gate.completed", "artifact.available", "harness.status", "harness.limits_changed", "command.denied", "command.completed"]}, "params": {"required": ["eventId", "sequence"]}}}]},
