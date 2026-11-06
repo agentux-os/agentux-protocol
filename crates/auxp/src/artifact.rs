@@ -67,13 +67,16 @@ impl ArtifactChunk {
 }
 
 fn decode_base64(input: &str) -> Result<Vec<u8>, String> {
-    if input.len() % 4 != 0 || input.len() > MAX_CHUNK_BYTES.div_ceil(3) * 4 {
+    if !input.len().is_multiple_of(4) || input.len() > MAX_CHUNK_BYTES.div_ceil(3) * 4 {
         return Err("artifact chunk base64 has invalid length".into());
     }
     let mut out = Vec::with_capacity(input.len() / 4 * 3);
-    let bytes = input.as_bytes();
-    for (index, block) in bytes.chunks_exact(4).enumerate() {
-        let final_block = index + 1 == bytes.len() / 4;
+    let (blocks, remainder) = input.as_bytes().as_chunks::<4>();
+    if !remainder.is_empty() {
+        return Err("artifact chunk base64 has invalid length".into());
+    }
+    for (index, block) in blocks.iter().enumerate() {
+        let final_block = index + 1 == blocks.len();
         let a = sextet(block[0]).ok_or("artifact chunk base64 is invalid")? as u32;
         let b = sextet(block[1]).ok_or("artifact chunk base64 is invalid")? as u32;
         let c = if block[2] == b'=' {
