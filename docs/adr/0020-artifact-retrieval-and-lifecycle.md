@@ -1,6 +1,6 @@
 # ADR 0020: Authenticated artifact retrieval and lifecycle
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-06
 - **Issue:** [agentux-protocol#20](https://github.com/agentux-os/agentux-protocol/issues/20)
 
@@ -122,6 +122,6 @@ default; active content is not rendered inline by this protocol.
 
 ## Decision record
 
-Pending Protocol owner review. No peer may advertise or use
-`artifact.lifecycle.v1` until this decision is accepted and the schemas and
-implementations are merged.
+Accepted by the Protocol owner on 2026-11-06. Implementations may use
+`artifact.lifecycle.v1` only after mutual capability negotiation and only
+when the required Core and Command paths are implemented and enabled.
