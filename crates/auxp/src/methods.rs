@@ -29,6 +29,7 @@ pub const COMMANDS: &[&str] = &[
     "node.resume",
     "node.events.ack",
     "node.snapshot",
+    "artifact.get",
 ];
 
 /// Node → Command events: notifications with an `eventId` and a per-node
@@ -105,6 +106,7 @@ pub fn required_params(method: &str) -> Option<&'static [&'static str]> {
             "requestedAfterSequence",
             "pageSize",
         ],
+        "artifact.get" => &["commandId", "artifactId", "sha256", "offset", "maxBytes"],
         "run.start" => &[
             "commandId",
             "missionId",
@@ -147,5 +149,6 @@ mod tests {
         assert_eq!(kind("node.resume"), Some(Kind::Command));
         assert_eq!(kind("node.events.ack"), Some(Kind::Command));
         assert_eq!(kind("node.snapshot"), Some(Kind::Command));
+        assert_eq!(kind("artifact.get"), Some(Kind::Command));
     }
 }

@@ -174,6 +174,27 @@ pub fn validate(message: &Value) -> Result<(), String> {
                 return Err("checkpointId must be at most 128 characters".into());
             }
         }
+        "artifact.get" => {
+            let offset = params.get("offset").and_then(Value::as_i64);
+            let max_bytes = params.get("maxBytes").and_then(Value::as_i64);
+            let digest = text("sha256");
+            if text("artifactId").is_empty() || text("artifactId").chars().count() > 128 {
+                return Err("artifact.get artifactId must contain 1..=128 characters".into());
+            }
+            if digest.len() != 64
+                || !digest
+                    .bytes()
+                    .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+            {
+                return Err("artifact.get sha256 must be lowercase hexadecimal".into());
+            }
+            if offset.is_none_or(|n| !(0..=25 * 1024 * 1024).contains(&n)) {
+                return Err("artifact.get offset must be between 0 and 25 MiB".into());
+            }
+            if max_bytes.is_none_or(|n| !(1..=256 * 1024).contains(&n)) {
+                return Err("artifact.get maxBytes must be between 1 and 256 KiB".into());
+            }
+        }
         "harness.status" if params.get("harnesses").is_none_or(Value::is_null) => {
             return Err("harness.status requires harnesses".into());
         }
@@ -190,6 +211,34 @@ pub fn validate(message: &Value) -> Result<(), String> {
                 .is_none_or(|s| s < 1))
     {
         return Err(format!("{method} requires eventId and a positive sequence"));
+    }
+    Ok(())
+}
+
+/// Validate a message with the capabilities accepted for this connection.
+/// Optional artifact lifecycle messages must pass this check at dispatch;
+/// `validate` alone only checks their wire shape.
+pub fn validate_with_capabilities(message: &Value, accepted: &[&str]) -> Result<(), String> {
+    validate(message)?;
+    let method = message.get("method").and_then(Value::as_str).unwrap_or("");
+    let removes_artifact = method == "execution.activity"
+        && message
+            .pointer("/params/activity/type")
+            .and_then(Value::as_str)
+            == Some("artifact_removed");
+    if method == "artifact.get" || removes_artifact {
+        for capability in [
+            "artifact.lifecycle.v1",
+            "execution.activity.v1",
+            "node.event_replay.v1",
+            "node.snapshot_checkpoint.v1",
+        ] {
+            if !accepted.contains(&capability) {
+                return Err(format!(
+                    "{method} requires negotiated capability {capability}"
+                ));
+            }
+        }
     }
     Ok(())
 }
@@ -343,6 +392,28 @@ mod tests {
             .unwrap()
             .extend(extra.as_object().unwrap().clone());
         json!({"jsonrpc": "2.0", "method": method, "params": params})
+    }
+
+    #[test]
+    fn artifact_lifecycle_requires_all_dependent_capabilities() {
+        let request = message(
+            "artifact.get",
+            json!({"commandId":"c1","artifactId":"a1","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","offset":0,"maxBytes":1}),
+        );
+        assert!(validate(&request).is_ok());
+        assert!(validate_with_capabilities(&request, &["artifact.lifecycle.v1"]).is_err());
+        assert!(
+            validate_with_capabilities(
+                &request,
+                &[
+                    "artifact.lifecycle.v1",
+                    "execution.activity.v1",
+                    "node.event_replay.v1",
+                    "node.snapshot_checkpoint.v1"
+                ]
+            )
+            .is_ok()
+        );
     }
 
     fn status_event(node_id: &str, status: &str) -> Value {

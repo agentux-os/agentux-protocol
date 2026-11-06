@@ -10,6 +10,7 @@ const officeFixtures = JSON.parse(await readFile(resolve(root, "fixtures/v1/offi
 const approvalSchema = JSON.parse(await readFile(resolve(root, "schemas/v1/approval-resolution.schema.json"), "utf8"));
 const approvalFixtures = JSON.parse(await readFile(resolve(root, "fixtures/v1/approval-responses.json"), "utf8"));
 const activitySchema = JSON.parse(await readFile(resolve(root, "schemas/v1/execution-activity.schema.json"), "utf8"));
+const artifactSchema = JSON.parse(await readFile(resolve(root, "schemas/v1/artifact-lifecycle.schema.json"), "utf8"));
 const replayFixtures = JSON.parse(await readFile(resolve(root, "fixtures/v1/replay.json"), "utf8"));
 const snapshotSchema = JSON.parse(await readFile(resolve(root, "schemas/v1/node-snapshot.schema.json"), "utf8"));
 const snapshotFixtures = JSON.parse(await readFile(resolve(root, "fixtures/v1/node-snapshot.json"), "utf8"));
@@ -48,6 +49,7 @@ const accepted = (message) => {
   if (message.method === "node.resume" && (!Number.isInteger(message.params.lastAcknowledgedSequence) || message.params.lastAcknowledgedSequence < 0 || !message.params.commandId)) return false;
   if (message.method === "node.events.ack" && (!Number.isInteger(message.params.throughSequence) || message.params.throughSequence < 0 || !message.params.commandId || ![undefined, "events", "snapshot_checkpoint"].includes(message.params.acknowledgementType) || (message.params.acknowledgementType === "snapshot_checkpoint" && (typeof message.params.checkpointId !== "string" || message.params.checkpointId.length < 1 || message.params.checkpointId.length > 128)) || (message.params.checkpointId !== undefined && message.params.acknowledgementType !== "snapshot_checkpoint"))) return false;
   if (message.method === "node.snapshot" && (!message.params.commandId || !message.params.checkpointId || !Number.isInteger(message.params.requestedAfterSequence) || message.params.requestedAfterSequence < 0 || !Number.isInteger(message.params.pageSize) || message.params.pageSize < 1 || message.params.pageSize > 100 || (message.params.pageToken !== undefined && (typeof message.params.pageToken !== "string" || message.params.pageToken.length > 2048)))) return false;
+  if (message.method === "artifact.get" && (!message.params.commandId || !message.params.artifactId || [...message.params.artifactId].length > 128 || !/^[a-f0-9]{64}$/.test(message.params.sha256 ?? "") || !Number.isInteger(message.params.offset) || message.params.offset < 0 || message.params.offset > 26214400 || !Number.isInteger(message.params.maxBytes) || message.params.maxBytes < 1 || message.params.maxBytes > 262144)) return false;
   if (message.method === "node.heartbeat" && ("eventId" in message.params || "sequence" in message.params || !["ready", "draining", "error"].includes(message.params.status) || !message.params.capacity || typeof message.params.capacity !== "object" || Array.isArray(message.params.capacity))) return false;
   if (message.method === "node.status_changed") {
     const node = message.params.node;
@@ -101,7 +103,7 @@ const accepted = (message) => {
       plan_created: [], task_created: ["taskName", "status"], task_status_changed: ["status"],
       tool_started: ["toolName"], tool_progress: ["toolName", "progress"], tool_completed: ["toolName"], tool_failed: ["toolName"],
       task_assigned: ["toAgentId", "toRoleId"], delegated: ["toAgentId", "toRoleId"], handoff: ["toAgentId", "toRoleId"],
-      result_returned: ["fromAgentId"], task_completed: [], task_failed: [], artifact_available: ["artifacts"],
+      result_returned: ["fromAgentId"], task_completed: [], task_failed: [], artifact_available: ["artifacts"], artifact_removed: ["artifactId"],
     };
     const commonFields = new Set(["schemaVersion", "activityId", "missionId", "runId", "agentId", "roleId", "sessionId", "taskId", "parentTaskId", "attempt", "causationId", "delegationId", "toolCallId", "type", "summary"]);
     if (Object.keys(activity).some((key) => !commonFields.has(key) && !variantFields[activity.type].includes(key))) return false;
@@ -113,6 +115,12 @@ if (activitySchema.$defs?.activity?.properties?.schemaVersion?.const !== "v1" ||
     activitySchema.$defs?.activity?.properties?.summary?.maxLength !== 2000 ||
     activitySchema.$defs?.activity?.properties?.artifacts?.maxItems !== 16) {
   throw new Error("typed activity schema must pin version and payload bounds");
+}
+
+if (!schema.oneOf.some((branch) => branch.allOf?.[1]?.properties?.method?.const === "artifact.get") ||
+    artifactSchema.$defs?.getParams?.properties?.maxBytes?.maximum !== 262144 ||
+    artifactSchema.$defs?.chunkResult?.properties?.byteLength?.maximum !== 26214400) {
+  throw new Error("artifact lifecycle schema must pin request and content bounds");
 }
 
 for (const message of fixtures.valid) {

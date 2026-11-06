@@ -32,7 +32,7 @@
         "causationId": {"type": "string", "minLength": 1, "maxLength": 128},
         "delegationId": {"type": "string", "minLength": 1, "maxLength": 128},
         "toolCallId": {"type": "string", "minLength": 1, "maxLength": 128},
-        "type": {"enum": ["plan_created", "task_created", "task_status_changed", "tool_started", "tool_progress", "tool_completed", "tool_failed", "task_assigned", "delegated", "handoff", "result_returned", "task_completed", "task_failed", "artifact_available"]},
+        "type": {"enum": ["plan_created", "task_created", "task_status_changed", "tool_started", "tool_progress", "tool_completed", "tool_failed", "task_assigned", "delegated", "handoff", "result_returned", "task_completed", "task_failed", "artifact_available", "artifact_removed"]},
         "summary": {"type": "string", "maxLength": 2000},
         "taskName": {"type": "string", "minLength": 1, "maxLength": 256},
         "status": {"$ref": "#/$defs/status"},
@@ -41,7 +41,8 @@
         "toAgentId": {"type": "string", "minLength": 1, "maxLength": 128},
         "toRoleId": {"type": "string", "minLength": 1, "maxLength": 128},
         "fromAgentId": {"type": "string", "minLength": 1, "maxLength": 128},
-        "artifacts": {"type": "array", "maxItems": 16, "items": {"$ref": "#/$defs/artifactRef"}}
+        "artifacts": {"type": "array", "maxItems": 16, "items": {"$ref": "#/$defs/artifactRef"}},
+        "artifactId": {"type": "string", "minLength": 1, "maxLength": 128}
       },
       "allOf": [
         {"if": {"properties": {"type": {"enum": ["task_created", "task_status_changed", "task_completed", "task_failed"]}}, "required": ["type"]}, "then": {"required": ["taskId"]}},
@@ -51,6 +52,7 @@
         {"if": {"properties": {"type": {"enum": ["delegated", "handoff", "task_assigned"]}}, "required": ["type"]}, "then": {"required": ["delegationId", "toAgentId", "toRoleId"]}},
         {"if": {"properties": {"type": {"const": "result_returned"}}, "required": ["type"]}, "then": {"required": ["delegationId", "fromAgentId"]}},
         {"if": {"properties": {"type": {"const": "artifact_available"}}, "required": ["type"]}, "then": {"required": ["artifacts"]}},
+        {"if": {"properties": {"type": {"const": "artifact_removed"}}, "required": ["type"]}, "then": {"required": ["artifactId"]}},
         {"if": {"properties": {"type": {"const": "tool_progress"}}, "required": ["type"]}, "then": {"required": ["progress"]}},
         {"if": {"properties": {"type": {"const": "plan_created"}}, "required": ["type"]}, "then": {"not": {"anyOf": [{"required":["taskName"]},{"required":["status"]},{"required":["toolName"]},{"required":["progress"]},{"required":["toAgentId"]},{"required":["toRoleId"]},{"required":["fromAgentId"]},{"required":["artifacts"]}]}}},
         {"if": {"properties": {"type": {"const": "task_created"}}, "required": ["type"]}, "then": {"not": {"anyOf": [{"required":["toolName"]},{"required":["progress"]},{"required":["toAgentId"]},{"required":["toRoleId"]},{"required":["fromAgentId"]},{"required":["artifacts"]}]}}},
@@ -60,7 +62,9 @@
         {"if": {"properties": {"type": {"enum": ["task_assigned", "delegated", "handoff"]}}, "required": ["type"]}, "then": {"not": {"anyOf": [{"required":["taskName"]},{"required":["status"]},{"required":["toolName"]},{"required":["progress"]},{"required":["fromAgentId"]},{"required":["artifacts"]}]}}},
         {"if": {"properties": {"type": {"const": "result_returned"}}, "required": ["type"]}, "then": {"not": {"anyOf": [{"required":["taskName"]},{"required":["status"]},{"required":["toolName"]},{"required":["progress"]},{"required":["toAgentId"]},{"required":["toRoleId"]},{"required":["artifacts"]}]}}},
         {"if": {"properties": {"type": {"enum": ["task_completed", "task_failed"]}}, "required": ["type"]}, "then": {"not": {"anyOf": [{"required":["taskName"]},{"required":["status"]},{"required":["toolName"]},{"required":["progress"]},{"required":["toAgentId"]},{"required":["toRoleId"]},{"required":["fromAgentId"]},{"required":["artifacts"]}]}}},
-        {"if": {"properties": {"type": {"const": "artifact_available"}}, "required": ["type"]}, "then": {"not": {"anyOf": [{"required":["taskName"]},{"required":["status"]},{"required":["toolName"]},{"required":["progress"]},{"required":["toAgentId"]},{"required":["toRoleId"]},{"required":["fromAgentId"]}]}}}
+        {"if": {"properties": {"type": {"const": "artifact_available"}}, "required": ["type"]}, "then": {"not": {"anyOf": [{"required":["taskName"]},{"required":["status"]},{"required":["toolName"]},{"required":["progress"]},{"required":["toAgentId"]},{"required":["toRoleId"]},{"required":["fromAgentId"]},{"required":["artifactId"]}]}}},
+        {"if": {"properties": {"type": {"const": "artifact_removed"}}, "required": ["type"]}, "then": {"not": {"anyOf": [{"required":["taskId"]},{"required":["taskName"]},{"required":["status"]},{"required":["toolName"]},{"required":["progress"]},{"required":["toAgentId"]},{"required":["toRoleId"]},{"required":["fromAgentId"]},{"required":["artifacts"]}]}}},
+        {"if": {"properties": {"type": {"not": {"const": "artifact_removed"}}}, "required": ["type"]}, "then": {"not": {"required": ["artifactId"]}}}
       ]
     }
   }
