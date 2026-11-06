@@ -149,4 +149,30 @@ mod tests {
         chunk.data_base64 = "!!!!".into();
         assert!(chunk.validate("a1", &"a".repeat(64), 0, 2).is_err());
     }
+
+    #[test]
+    fn accepts_exactly_256_kib_and_matches_schema_encoded_limit() {
+        let encoded = format!("{}AA==", "A".repeat(349_524));
+        let chunk = ArtifactChunk {
+            artifact_id: "a1".into(),
+            sha256: "a".repeat(64),
+            media_type: "application/octet-stream".into(),
+            byte_length: MAX_CHUNK_BYTES as u64,
+            offset: 0,
+            data_base64: encoded,
+        };
+        assert_eq!(
+            chunk
+                .validate("a1", &"a".repeat(64), 0, MAX_CHUNK_BYTES)
+                .unwrap()
+                .len(),
+            MAX_CHUNK_BYTES
+        );
+        let schema: serde_json::Value =
+            serde_json::from_str(crate::schemas::ARTIFACT_LIFECYCLE).unwrap();
+        assert_eq!(
+            schema["$defs"]["chunkResult"]["properties"]["dataBase64"]["maxLength"],
+            chunk.data_base64.len()
+        );
+    }
 }
